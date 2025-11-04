@@ -39,7 +39,7 @@ export default async function AgentEditPage({ params }: AgentPageProps) {
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Edit Agent</h1>
         <p className="text-muted-foreground mt-2">
-          Update your agent's personality and behavior
+          Update your agent&apos;s personality and behavior
         </p>
       </div>
 

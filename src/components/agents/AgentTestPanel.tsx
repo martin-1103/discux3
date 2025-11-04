@@ -20,38 +20,38 @@ interface AgentTestPanelProps {
   agent: Agent
 }
 
-const SAMPLE_PROMPTS = {
-  PROFESSIONAL: [
-    "How can I improve team productivity?",
-    "What's your approach to strategic planning?",
-    "Help me make a data-driven decision",
-  ],
-  DIRECT: [
-    "What should I do first?",
-    "Give me actionable steps",
-    "What's the solution?",
-  ],
-  FRIENDLY: [
-    "I need some advice on a project",
-    "Can you help me brainstorm?",
-    "What do you think about this idea?",
-  ],
-  CREATIVE: [
-    "Help me think outside the box",
-    "What's an innovative approach?",
-    "Generate some creative ideas",
-  ],
-  ANALYTICAL: [
-    "Analyze this situation for me",
-    "What does the data tell us?",
-    "Break this down logically",
-  ],
-}
-
 export function AgentTestPanel({ agent }: AgentTestPanelProps) {
   const [testPrompt, setTestPrompt] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [response, setResponse] = useState("")
+
+  const SAMPLE_PROMPTS = {
+    PROFESSIONAL: [
+      "How can I improve team productivity?",
+      "What's your approach to strategic planning?",
+      "Help me make a data-driven decision",
+    ],
+    DIRECT: [
+      "What should I do first?",
+      "Give me actionable steps",
+      "What's the solution?",
+    ],
+    FRIENDLY: [
+      "I need some advice on a project",
+      "Can you help me brainstorm?",
+      "What do you think about this idea?",
+    ],
+    CREATIVE: [
+      "Help me think outside the box",
+      "What's an innovative approach?",
+      "Generate some creative ideas",
+    ],
+    ANALYTICAL: [
+      "Analyze this situation for me",
+      "What does the data tell us?",
+      "Break this down logically",
+    ],
+  }
 
   const samplePrompts = SAMPLE_PROMPTS[agent.style as keyof typeof SAMPLE_PROMPTS] || SAMPLE_PROMPTS.PROFESSIONAL
 
@@ -69,10 +69,7 @@ export function AgentTestPanel({ agent }: AgentTestPanelProps) {
     }, 1500)
   }
 
-  const useSamplePrompt = (prompt: string) => {
-    setTestPrompt(prompt)
-    setResponse("")
-  }
+  
 
   return (
     <Card>
@@ -97,7 +94,7 @@ export function AgentTestPanel({ agent }: AgentTestPanelProps) {
                 key={i}
                 variant="outline"
                 size="sm"
-                onClick={() => useSamplePrompt(prompt)}
+                onClick={() => setTestPrompt(prompt)}
                 className="text-xs"
               >
                 {prompt}
@@ -160,7 +157,7 @@ export function AgentTestPanel({ agent }: AgentTestPanelProps) {
   )
 }
 
-function generateMockResponse(agent: Agent, prompt: string): string {
+function generateMockResponse(agent: Agent, _prompt: string): string {
   const styleResponses = {
     PROFESSIONAL: `Based on your question, I'd recommend a structured approach:\n\n1. Analyze the current situation and gather relevant data\n2. Define clear objectives and success metrics\n3. Develop actionable strategies aligned with your goals\n4. Implement with proper monitoring and adjustment\n\nThis professional methodology ensures sustainable results.`,
     

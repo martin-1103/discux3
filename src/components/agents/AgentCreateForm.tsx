@@ -76,7 +76,7 @@ export function AgentCreateForm() {
           <CardHeader>
             <CardTitle>Agent Configuration</CardTitle>
             <CardDescription>
-              Configure your agent's basic information and behavior
+              Configure your agent&apos;s basic information and behavior
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -176,7 +176,7 @@ export function AgentCreateForm() {
                   <p className="text-sm text-destructive">{errors.prompt.message}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Define the agent's personality, expertise, and behavior (10-4000 characters)
+                  Define the agent&apos;s personality, expertise, and behavior (10-4000 characters)
                 </p>
               </div>
 

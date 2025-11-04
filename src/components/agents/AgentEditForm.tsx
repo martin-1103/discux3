@@ -86,7 +86,7 @@ export function AgentEditForm({ agent }: AgentEditFormProps) {
           <CardHeader>
             <CardTitle>Agent Configuration</CardTitle>
             <CardDescription>
-              Update your agent's information and behavior
+              Update your agent&apos;s information and behavior
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -186,7 +186,7 @@ export function AgentEditForm({ agent }: AgentEditFormProps) {
                   <p className="text-sm text-destructive">{errors.prompt.message}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Define the agent's personality, expertise, and behavior (10-4000 characters)
+                  Define the agent&apos;s personality, expertise, and behavior (10-4000 characters)
                 </p>
               </div>
 
