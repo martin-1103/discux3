@@ -261,3 +261,18 @@ enum MessageType {
   AGENT
   SYSTEM
 }
+
+// ============================================
+// Vector Database ID Mapping
+// ============================================
+
+model VectorIdMapping {
+  id           String   @id @default(cuid())
+  cuidId       String   @unique @map("cuid_id") // Original application ID (cuid2)
+  qdrantUuid   String   @unique @map("qdrant_uuid") // Qdrant-compatible UUID
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([cuidId])
+  @@index([qdrantUuid])
+  @@map("vector_id_mappings")
+}

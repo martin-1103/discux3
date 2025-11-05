@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/cleanup-logs.js && next dev",
+    "build": "node scripts/cleanup-logs.js && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -13,7 +13,16 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "migrate:vectors": "tsx scripts/migrate-vector-ids.ts",
+    "clean-logs": "node scripts/cleanup-logs.js",
+    "logs": "dir logs || echo 'No logs directory found'",
+    "view-logs": "powershell -Command \"Get-Content logs\\combined-*.log -Wait -Tail 10 2>$null || echo 'No combined logs found'\"",
+    "view-errors": "powershell -Command \"Get-Content logs\\errors-*.log -Wait -Tail 10 2>$null || echo 'No error logs found'\"",
+    "view-warnings": "powershell -Command \"Get-Content logs\\warnings-*.log -Wait -Tail 10 2>$null || echo 'No warning logs found'\"",
+    "view-db": "powershell -Command \"Get-Content logs\\database-*.log -Wait -Tail 10 2>$null || echo 'No database logs found'\"",
+    "view-console": "powershell -Command \"Get-Content logs\\console-*.log -Wait -Tail 10 2>$null || echo 'No console logs found'\"",
+    "all-logs": "echo '=== All Log Files ===' && dir logs || echo 'No logs directory'"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.0.7",
@@ -39,7 +48,6 @@
     "lucide-react": "^0.408.0",
     "next": "14.2.5",
     "next-auth": "5.0.0-beta.19",
-  
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.1",
@@ -49,6 +57,8 @@
     "tailwindcss": "^3.4.6",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.5.3",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.4"
   },
@@ -66,7 +76,8 @@
     "postcss": "^8.4.38",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.5",
-    "prisma": "^5.16.2"
+    "prisma": "^5.16.2",
+    "tsx": "^4.7.0"
   },
   "engines": {
     "node": ">=20.14.0",

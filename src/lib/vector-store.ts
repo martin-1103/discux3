@@ -1,10 +1,13 @@
 /**
  * Qdrant Vector Store for Discux3
  * Handles conversation context storage and retrieval for AI agents
+ * 
+ * ID Mapping: Converts cuid2 IDs to UUID format for Qdrant compatibility
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest'
 import { embedText, embedTexts, getEmbeddingDimension } from './embeddings'
+import { getIdMapper } from './id-mapper'
 
 interface VectorMessage {
   id: string
@@ -29,6 +32,7 @@ export class VectorStore {
   private client: QdrantClient
   private collectionName: string
   private enabled: boolean
+  private idMapper = getIdMapper() // ID mapper for cuid2 <-> UUID conversion
 
   constructor() {
     const url = process.env.QDRANT_URL || "http://localhost:6333"
@@ -78,6 +82,7 @@ export class VectorStore {
 
   /**
    * Store a message in vector database
+   * Converts cuid2 ID to UUID for Qdrant compatibility
    */
   async storeMessage(message: VectorMessage): Promise<void> {
     if (!this.enabled) return
@@ -85,11 +90,15 @@ export class VectorStore {
     try {
       const embedding = await embedText(message.content)
 
+      // Convert cuid2 to UUID for Qdrant
+      const qdrantId = await this.idMapper.cuidToUuid(message.id)
+
       await this.client.upsert(this.collectionName, {
         points: [{
-          id: message.id,
+          id: qdrantId, // Use UUID instead of cuid2
           vector: embedding,
           payload: {
+            cuid_id: message.id, // Keep original cuid2 for reference
             room_id: message.room_id,
             content: message.content,
             author_name: message.author_name,
@@ -106,6 +115,7 @@ export class VectorStore {
 
   /**
    * Store multiple messages (batch operation)
+   * Converts cuid2 IDs to UUIDs for Qdrant compatibility
    */
   async storeBatchMessages(messages: VectorMessage[]): Promise<void> {
     if (!this.enabled || messages.length === 0) return
@@ -113,11 +123,16 @@ export class VectorStore {
     try {
       const texts = messages.map(m => m.content)
       const embeddings = await embedTexts(texts)
+      
+      // Batch convert cuid2 IDs to UUIDs
+      const cuids = messages.map(m => m.id)
+      const qdrantIds = await this.idMapper.batchCuidToUuid(cuids)
 
       const points = messages.map((message, index) => ({
-        id: message.id,
+        id: qdrantIds[index], // Use UUID instead of cuid2
         vector: embeddings[index],
         payload: {
+          cuid_id: message.id, // Keep original cuid2 for reference
           room_id: message.room_id,
           content: message.content,
           author_name: message.author_name,
@@ -157,7 +172,7 @@ export class VectorStore {
       })
 
       return (searchResult as any).map((point: any) => ({
-        id: point.id as string,
+        id: point.payload?.cuid_id || point.id as string, // Use original cuid2 if available
         room_id: point.payload?.room_id as string,
         content: point.payload?.content as string,
         author_name: point.payload?.author_name as string,
@@ -192,7 +207,7 @@ export class VectorStore {
       })
 
       return (searchResult as any).points.map((point: any) => ({
-        id: point.id as string,
+        id: point.payload?.cuid_id || point.id as string, // Use original cuid2 if available
         room_id: point.payload?.room_id as string,
         content: point.payload?.content as string,
         author_name: point.payload?.author_name as string,

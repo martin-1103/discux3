@@ -29,6 +29,14 @@ interface Message {
       color: string
     }
   }>
+  parsedAgentInfo?: {
+    id: string
+    name: string
+    emoji: string
+    color: string
+    style: string
+  }
+  parsedContent?: string
 }
 
 interface Room {
@@ -80,6 +88,26 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
     loadMessages()
   }, [loadMessages])
 
+  // Poll for new messages every 2 seconds when there are active agent responses
+  useEffect(() => {
+    if (isTyping.length > 0) {
+      const interval = setInterval(() => {
+        loadMessages()
+      }, 2000)
+
+      return () => clearInterval(interval)
+    }
+  }, [isTyping, loadMessages])
+
+  // Also poll for new messages periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadMessages()
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [loadMessages])
+
   // Auto scroll to bottom
   useEffect(() => {
     scrollToBottom()
@@ -121,46 +149,14 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
     const mentionedAgentIds = mentionedAgents.map(a => a.id)
     setIsTyping(mentionedAgentIds)
 
-    try {
-      // Generate real AI responses using Z.ai
-      const response = await generateBatchAgentResponses(
-        mentionedAgentIds,
-        roomId,
-        message.content,
-        currentUserId
-      )
+    // The agent responses are generated server-side asynchronously
+    // We'll just show typing indicator and let polling handle the rest
+    console.log(`[ChatInterface] Agent mentions detected for: ${mentionedAgents.map(a => a.name).join(', ')}`)
 
-      if (response.success && response.data.responses.length > 0) {
-        // Add AI responses to chat
-        response.data.responses.forEach(responseData => {
-          setMessages(prev => [...prev, responseData.message as Message])
-        })
-      }
-    } catch (error) {
-      console.error("Error generating AI responses:", error)
-      
-      // Fallback to mock responses if AI fails
-      for (const agent of mentionedAgents) {
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
-        
-        const mockResponse = generateMockResponse(agent, message.content)
-        
-        const result = await createAgentMessage(
-          roomId,
-          agent.id,
-          mockResponse.content,
-          mockResponse.processingTime,
-          mockResponse.confidence,
-          mockResponse.contextLength
-        )
-
-        if (result.success && result.data) {
-          setMessages(prev => [...prev, result.data as Message])
-        }
-      }
-    } finally {
+    // Clear typing indicator after a reasonable time (server should have finished by then)
+    setTimeout(() => {
       setIsTyping([])
-    }
+    }, 10000) // 10 seconds max wait time
   }
 
   const generateMockResponse = (agent: any, userMessage: string) => {
@@ -204,10 +200,34 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
   }
 
   const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(date).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     })
+  }
+
+  const parseAgentInfo = (message: Message): Message => {
+    if (message.type === "AGENT" && message.content.startsWith('[AGENT:')) {
+      const agentInfoMatch = message.content.match(/^\[AGENT:([^:]+):([^:]+):([^:]+):([^:]+):([^\]]+)\]/)
+
+      if (agentInfoMatch) {
+        const [, agentId, agentName, agentEmoji, agentColor, agentStyle] = agentInfoMatch
+        const cleanContent = message.content.replace(/^\[AGENT:[^\]]+\]\n/, '')
+
+        return {
+          ...message,
+          parsedAgentInfo: {
+            id: agentId,
+            name: agentName,
+            emoji: agentEmoji,
+            color: agentColor,
+            style: agentStyle
+          },
+          parsedContent: cleanContent
+        }
+      }
+    }
+    return message
   }
 
   const formatMessageContent = (content: string, mentions: any[]) => {
@@ -230,39 +250,55 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
-            <div key={message.id} className="flex gap-3">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className={message.type === "AGENT" ? "text-lg" : ""}>
-                  {message.type === "AGENT" ? "🤖" : 
-                   message.sender.name?.[0] || 
-                   message.sender.email?.[0] || "U"}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">
-                    {message.type === "AGENT" ? "AI Agent" : 
-                     message.sender.name || message.sender.email}
-                  </span>
-                  {message.type === "AGENT" && (
-                    <Badge variant="outline" className="text-xs">AI</Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatTime(message.timestamp)}
-                  </span>
+          {messages.map((message) => {
+            const parsedMessage = parseAgentInfo(message)
+            const agentInfo = parsedMessage.parsedAgentInfo
+            const displayContent = parsedMessage.parsedContent || parsedMessage.content
+
+            return (
+              <div key={message.id} className="flex gap-3">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback className={message.type === "AGENT" ? "text-lg" : ""}>
+                    {message.type === "AGENT" ? (agentInfo?.emoji || "🤖") :
+                     message.sender.name?.[0] ||
+                     message.sender.email?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">
+                      {message.type === "AGENT" ? (
+                        agentInfo ? (
+                          <span className="flex items-center gap-1">
+                            <span>{agentInfo.emoji}</span>
+                            <span>{agentInfo.name}</span>
+                          </span>
+                        ) : "AI Agent"
+                      ) : (
+                        message.sender.name || message.sender.email
+                      )}
+                    </span>
+                    {message.type === "AGENT" && (
+                      <Badge variant="outline" className="text-xs">
+                        {agentInfo?.style.toLowerCase() || "AI"}
+                      </Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {formatTime(message.timestamp)}
+                    </span>
+                  </div>
+
+                  <div
+                    className="text-sm bg-white p-3 rounded-lg border whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{
+                      __html: formatMessageContent(displayContent, message.mentions)
+                    }}
+                  />
                 </div>
-                
-                <div 
-                  className="text-sm bg-white p-3 rounded-lg border"
-                  dangerouslySetInnerHTML={{ 
-                    __html: formatMessageContent(message.content, message.mentions) 
-                  }}
-                />
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {/* Typing Indicators */}
           {isTyping.length > 0 && (

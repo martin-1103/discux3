@@ -12,7 +12,8 @@ export async function generateAgentResponse(
   agentId: string,
   roomId: string,
   userMessage: string,
-  userId: string
+  userId: string,
+  userName?: string
 ) {
   try {
     // Get agent details
@@ -33,11 +34,8 @@ export async function generateAgentResponse(
       throw new Error("Agent not found")
     }
 
-    // Get current user info
-    const currentUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true }
-    })
+    // Use provided userName or fallback to a default
+    const currentUser = { name: userName || "User" }
 
     // Get relevant context from vector database
     const relevantContext = await getConversationContext(roomId, userMessage, 5)

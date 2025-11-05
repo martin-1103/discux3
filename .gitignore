@@ -38,3 +38,9 @@ next-env.d.ts
 
 # prisma
 prisma/migrations
+
+# Navigator context markers
+.context-markers/
+
+# Navigator temporary files
+.agent/.nav-temp/

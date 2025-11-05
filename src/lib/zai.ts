@@ -94,33 +94,53 @@ export class ZAIClient {
    * Create a chat completion with Z.ai API
    */
   async createChatCompletion(request: ZAIChatRequest): Promise<ZAIChatResponse> {
-    const response = await fetch(`${this.baseURL}/chat/completions`, {
+    // Determine if using Anthropic-style endpoint (already includes full path)
+    const isAnthropicStyle = this.baseURL.includes('/messages')
+    const endpoint = isAnthropicStyle ? this.baseURL : `${this.baseURL}/chat/completions`
+
+    // Build request payload based on API style
+    const requestBody = isAnthropicStyle ? {
+      model: request.model || this.defaultModel,
+      messages: request.messages,
+      max_tokens: request.max_tokens ?? 2000,
+    } : {
+      model: request.model || this.defaultModel,
+      messages: request.messages,
+      temperature: request.temperature ?? 0.7,
+      max_tokens: request.max_tokens ?? 2000,
+      stream: request.stream ?? false,
+      top_p: request.top_p ?? 0.95,
+      user_id: request.user_id,
+      request_id: request.request_id,
+    }
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept-Language": "en-US,en",
         "Authorization": `Bearer ${this.apiKey}`,
       },
-      body: JSON.stringify({
-        model: request.model || this.defaultModel,
-        messages: request.messages,
-        temperature: request.temperature ?? 0.7,
-        max_tokens: request.max_tokens ?? 2000,
-        stream: request.stream ?? false,
-        top_p: request.top_p ?? 0.95,
-        user_id: request.user_id,
-        request_id: request.request_id,
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
-      const errorData: ZAIError = await response.json().catch(() => ({
-        error: {
-          message: `HTTP ${response.status}: ${response.statusText}`,
-          type: "http_error"
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+
+      try {
+        const errorData = await response.json()
+        if (errorData.error?.message) {
+          errorMessage = errorData.error.message
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData
         }
-      }))
-      throw new Error(`Z.ai API Error: ${errorData.error.message}`)
+      } catch (e) {
+        // Use default error message if JSON parsing fails
+      }
+
+      throw new Error(`Z.ai API Error: ${errorMessage}`)
     }
 
     return response.json()
@@ -150,14 +170,17 @@ export class ZAIClient {
     // Build system message based on agent style
     const systemPrompt = this.buildSystemPrompt(agentPrompt, agentStyle)
 
-    // Build messages array
+    // Build messages array - Z.ai API doesn't support system role
+    // so we prepend system prompt to the first user message
     const messages: ZAIMessage[] = [
-      { role: "system", content: systemPrompt },
       ...conversationHistory.map(msg => ({
         role: msg.role as "user" | "assistant",
         content: msg.content
       })),
-      { role: "user", content: userMessage }
+      {
+        role: "user",
+        content: systemPrompt ? `${systemPrompt}\n\nUser: ${userMessage}` : userMessage
+      }
     ]
 
     try {
@@ -172,18 +195,57 @@ export class ZAIClient {
 
       const processingTime = Date.now() - startTime
 
+      // Extract content from Z.AI API response
+      // Check if response format is Anthropic-style or OpenAI-style
+      let content: string
+      let model: string
+      let usage: any
+
+      if (response.content && Array.isArray(response.content)) {
+        // Anthropic API format
+        content = response.content[0]?.text || "I apologize, but I couldn't generate a proper response."
+        model = response.model
+        usage = {
+          prompt_tokens: response.usage?.input_tokens || 0,
+          completion_tokens: response.usage?.output_tokens || 0,
+          total_tokens: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0)
+        }
+      } else if (response.choices && response.choices[0]?.message) {
+        // OpenAI API format
+        const message = response.choices[0].message
+        content = message.content || message.reasoning_content || "I apologize, but I couldn't generate a proper response."
+        model = response.model
+        usage = response.usage
+      } else {
+        // Fallback
+        content = "I apologize, but I couldn't generate a proper response."
+        model = "unknown"
+        usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+      }
+
       return {
-        content: response.choices[0].message.content,
-        model: response.model,
-        usage: response.usage,
+        content: content,
+        model: model,
+        usage: usage,
         processingTime
       }
     } catch (error) {
       console.error("Z.ai API Error:", error)
-      
+
+      // Check for specific error types
+      let fallbackMessage = this.getFallbackResponse(agentStyle, userMessage)
+
+      if (error instanceof Error) {
+        if (error.message.includes("Insufficient balance") || error.message.includes("1113")) {
+          fallbackMessage = "I apologize, but the AI service is currently unavailable due to insufficient balance. Please contact the administrator to recharge the account."
+        } else if (error.message.includes("Unknown Model") || error.message.includes("1211")) {
+          fallbackMessage = "I apologize, but there's a configuration issue with the AI model. Please contact the administrator."
+        }
+      }
+
       // Fallback response if API fails
       return {
-        content: this.getFallbackResponse(agentStyle, userMessage),
+        content: fallbackMessage,
         model: "fallback",
         usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
         processingTime: Date.now() - startTime
@@ -258,6 +320,7 @@ export class ZAIClient {
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
+      console.log(`[ZAI] Testing connection to: ${this.baseURL}`)
       await this.createChatCompletion({
         model: this.defaultModel,
         messages: [
@@ -271,6 +334,7 @@ export class ZAIClient {
         message: "Z.ai API connection successful"
       }
     } catch (error) {
+      console.log(`[ZAI] Connection error:`, error)
       return {
         success: false,
         message: `Z.ai API connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -294,7 +358,8 @@ export function getZAIClient(): ZAIClient {
     }
 
     zaiClient = new ZAIClient(apiKey, {
-      defaultModel: process.env.ZAI_MODEL || "glm-4.5-flash"
+      baseURL: process.env.ZAI_API_URL,
+      defaultModel: process.env.ZAI_MODEL || "glm-4.6"
     })
   }
 

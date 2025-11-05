@@ -8,6 +8,7 @@ import {
 } from "@/lib/validations"
 import { storeConversationMessage } from "../vector-store"
 import { incrementAgentUsage } from "./agents"
+import { generateAgentResponse } from "./ai"
 
 /**
  * Get messages for a room
@@ -68,7 +69,15 @@ export async function getMessages(roomId: string, userId: string, limit: number 
     // Reverse to get chronological order
     const orderedMessages = messages.reverse()
 
-    return { success: true, data: orderedMessages }
+    // Convert Decimal objects to numbers for Client Component compatibility
+    const serializedMessages = orderedMessages.map(message => ({
+      ...message,
+      processingTime: message.processingTime ? Number(message.processingTime) : null,
+      agentConfidence: message.agentConfidence ? Number(message.agentConfidence) : null,
+      timestamp: message.timestamp
+    }))
+
+    return { success: true, data: serializedMessages }
   } catch (error) {
     console.error("Error fetching messages:", error)
     return { success: false, error: "Failed to fetch messages" }
@@ -158,14 +167,22 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
       return newMessage
     })
 
+    // Convert Decimal objects to numbers for Client Component compatibility
+    const serializedMessage = {
+      ...newMessage,
+      processingTime: newMessage.processingTime ? Number(newMessage.processingTime) : null,
+      agentConfidence: newMessage.agentConfidence ? Number(newMessage.agentConfidence) : null,
+      timestamp: newMessage.timestamp
+    }
+
     // Store message in vector database for context
-    if (message.sender) {
+    if (serializedMessage.sender) {
       try {
         await storeConversationMessage(
           validatedData.roomId,
-          message.id,
+          serializedMessage.id,
           validatedData.content,
-          message.sender.name || "Anonymous",
+          serializedMessage.sender.name || "Anonymous",
           "user"
         )
       } catch (error) {
@@ -179,8 +196,29 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
       await incrementAgentUsage(agentMention)
     }
 
+    // Trigger agent responses asynchronously (server-side)
+    if (agentMentions.length > 0) {
+      console.log(`[Messages] Triggering agent responses for ${agentMentions.length} agents`)
+
+      // Generate responses for each mentioned agent
+      agentMentions.forEach(async (agentId) => {
+        try {
+          await generateAgentResponse(
+            agentId,
+            validatedData.roomId,
+            validatedData.content,
+            validatedData.senderId,
+            message.sender?.name || "User"
+          )
+          console.log(`[Messages] Agent response generated for agent: ${agentId}`)
+        } catch (error) {
+          console.error(`[Messages] Failed to generate response for agent ${agentId}:`, error)
+        }
+      })
+    }
+
     revalidatePath(`/rooms/${validatedData.roomId}/chat`)
-    return { success: true, data: message }
+    return { success: true, data: serializedMessage }
   } catch (error) {
     console.error("Error creating message:", error)
     if (error instanceof Error) {
@@ -194,29 +232,32 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
  * Create an agent message
  */
 export async function createAgentMessage(
-  roomId: string, 
-  agentId: string, 
+  roomId: string,
+  agentId: string,
   content: string,
   processingTime?: number,
   agentConfidence?: number,
   contextLength?: number
 ) {
   try {
-    // Get agent to find creator
+    // Get agent information
     const agent = await prisma.agent.findUnique({
       where: { id: agentId },
-      select: { createdBy: true }
+      select: { createdBy: true, name: true, emoji: true, color: true, style: true }
     })
 
     if (!agent) {
       return { success: false, error: "Agent not found" }
     }
 
+    // Prepend agent info to content for parsing in the frontend
+    const contentWithAgentInfo = `[AGENT:${agentId}:${agent.name}:${agent.emoji}:${agent.color}:${agent.style}]\n${content}`
+
     // Create message as agent (using agent's creator as sender for now)
     const message = await prisma.message.create({
       data: {
         roomId,
-        content,
+        content: contentWithAgentInfo,
         type: "AGENT",
         senderId: agent.createdBy,
         processingTime,
@@ -247,18 +288,21 @@ export async function createAgentMessage(
       }
     })
 
-      // Store agent message in vector database for context
-    try {
-      const agent = await prisma.agent.findUnique({
-        where: { id: agentId },
-        select: { name: true }
-      })
+    // Convert Decimal objects to numbers for Client Component compatibility
+    const serializedMessage = {
+      ...message,
+      processingTime: message.processingTime ? Number(message.processingTime) : null,
+      agentConfidence: message.agentConfidence ? Number(message.agentConfidence) : null,
+      timestamp: message.timestamp
+    }
 
+      // Store agent message in vector database for context (without agent info prefix)
+    try {
       await storeConversationMessage(
         roomId,
         message.id,
         content,
-        agent?.name || "AI Agent",
+        agent.name,
         "agent"
       )
     } catch (error) {
@@ -267,7 +311,7 @@ export async function createAgentMessage(
     }
 
     revalidatePath(`/rooms/${roomId}/chat`)
-    return { success: true, data: message }
+    return { success: true, data: serializedMessage }
   } catch (error) {
     console.error("Error creating agent message:", error)
     return { success: false, error: "Failed to create agent message" }
@@ -313,25 +357,42 @@ export async function deleteMessage(messageId: string, userId: string) {
  */
 function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: string, name: string } }>): string[] {
   const mentions: string[] = []
-  
+
+  console.log(`[Messages] Extracting mentions from content: "${content}"`)
+  console.log(`[Messages] Available room agents:`, roomAgents.map(ra => ({ id: ra.agent.id, name: ra.agent.name })))
+
   // Find @mentions in the content
   const mentionRegex = /@(\w+)/g
   let match
-  
+
   while ((match = mentionRegex.exec(content)) !== null) {
     const mentionName = match[1].toLowerCase()
-    
-    // Find matching agent in room
-    const agent = roomAgents.find(roomAgent => 
-      roomAgent.agent.name.toLowerCase() === mentionName
-    )
-    
-    if (agent) {
-      mentions.push(agent.agent.id)
+    console.log(`[Messages] Found mention: @${mentionName}`)
+
+    // Check for @all mention
+    if (mentionName === 'all') {
+      // Add all agents in the room
+      const allAgentIds = roomAgents.map(roomAgent => roomAgent.agent.id)
+      console.log(`[Messages] @all mention - adding all agent IDs:`, allAgentIds)
+      mentions.push(...allAgentIds)
+    } else {
+      // Find matching agent in room
+      const agent = roomAgents.find(roomAgent =>
+        roomAgent.agent.name.toLowerCase() === mentionName
+      )
+
+      if (agent) {
+        console.log(`[Messages] Found matching agent: ${agent.name} (${agent.agent.id})`)
+        mentions.push(agent.agent.id)
+      } else {
+        console.log(`[Messages] No agent found with name: ${mentionName}`)
+      }
     }
   }
-  
-  return [...new Set(mentions)] // Remove duplicates
+
+  const uniqueMentions = [...new Set(mentions)]
+  console.log(`[Messages] Final extracted agent IDs:`, uniqueMentions)
+  return uniqueMentions
 }
 
 /**
