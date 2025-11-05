@@ -35,3 +35,197 @@
 [2025-11-05T07:28:34.769Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
 [2025-11-05T07:28:34.771Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
 [2025-11-05T07:28:34.773Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:28.150Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.151Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.153Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.153Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.154Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.157Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.158Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.160Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.160Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.161Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.162Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:28.162Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:35.211Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.212Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.212Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.213Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.214Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.215Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.216Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.216Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.217Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.217Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.218Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.218Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:35.219Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:36.868Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.873Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.877Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.878Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.881Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.884Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.885Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.889Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.890Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.891Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.893Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.894Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.894Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.896Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.896Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.898Z] ERROR:  ⨯ {
+  "page": "/rooms/cmhkoleb0000714aj3qpgo4im/chat"
+}
+[2025-11-05T07:29:36.902Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.905Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.906Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.910Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.915Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.916Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.918Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.919Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.920Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.921Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.921Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.923Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.924Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.925Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.926Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.927Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.929Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.930Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.932Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.934Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.935Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.936Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.938Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.939Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.940Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.941Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.943Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.945Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.946Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.951Z] ERROR:  ⨯ Failed to generate static paths for /rooms/[id]/chat:
+[2025-11-05T07:29:36.953Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.954Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.956Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.957Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.960Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.962Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.964Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.966Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.968Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.971Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.972Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.973Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:36.975Z] ERROR: {
+  "type": "TypeError"
+}
+[2025-11-05T07:29:43.040Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.041Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.042Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.044Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.044Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.045Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.045Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.046Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.046Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.047Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.047Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.048Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.048Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.049Z] WARN:  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[2025-11-05T07:29:43.283Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.284Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.284Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.285Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.286Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.286Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.287Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.288Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.288Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.289Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.290Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.290Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.291Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:43.291Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.605Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.608Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.610Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.610Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.611Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.612Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.613Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:46.614Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.388Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.389Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.389Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.390Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.390Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.391Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.391Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T07:29:50.392Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
