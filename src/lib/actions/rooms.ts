@@ -84,6 +84,52 @@ export async function getRooms(userId: string) {
 }
 
 /**
+ * Get user role in a room
+ */
+export async function getUserRoleInRoom(roomId: string, userId: string): Promise<"OWNER" | "ADMIN" | "MEMBER" | null> {
+  try {
+    const room = await prisma.room.findFirst({
+      where: {
+        id: roomId,
+        OR: [
+          { createdBy: userId },
+          {
+            participants: {
+              some: { userId }
+            }
+          }
+        ]
+      },
+      include: {
+        participants: {
+          where: { userId },
+          select: { role: true }
+        }
+      }
+    })
+
+    if (!room) {
+      return null
+    }
+
+    // If user created the room, they are OWNER
+    if (room.createdBy === userId) {
+      return "OWNER"
+    }
+
+    // Otherwise, check participant role
+    if (room.participants.length > 0) {
+      return room.participants[0].role
+    }
+
+    return null
+  } catch (error) {
+    console.error("Error getting user role:", error)
+    return null
+  }
+}
+
+/**
  * Get a single room by ID (if user has access)
  */
 export async function getRoom(id: string, userId: string) {

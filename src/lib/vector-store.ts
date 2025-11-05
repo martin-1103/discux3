@@ -245,6 +245,30 @@ export class VectorStore {
   }
 
   /**
+   * Delete all messages for a specific room (clear history)
+   */
+  async deleteRoomMessages(roomId: string): Promise<void> {
+    if (!this.enabled) return
+
+    try {
+      console.log(`[VectorStore] Deleting all messages for room: ${roomId}`)
+
+      await this.client.delete(this.collectionName, {
+        filter: {
+          must: [
+            { key: "room_id", match: { value: roomId } }
+          ]
+        }
+      })
+
+      console.log(`[VectorStore] Successfully deleted all messages for room: ${roomId}`)
+    } catch (error) {
+      console.error(`[VectorStore] Error deleting room messages for ${roomId}:`, error)
+      throw error
+    }
+  }
+
+  /**
    * Get vector database statistics
    */
   async getStats(): Promise<{ enabled: boolean; collection: string; total_points: number }> {
@@ -350,5 +374,25 @@ export async function getConversationContext(
   limit?: number
 ): Promise<SearchResult[]> {
   const store = getVectorStore()
-  return store.getRelevantContext(roomId, query, limit)
+
+  // Try enhanced search first, fallback to basic search
+  try {
+    const { getEnhancedVectorSearch } = await import("./services/enhanced-vector-search")
+    const enhancedSearch = getEnhancedVectorSearch()
+    const enhancedResult = await enhancedSearch.searchWithContext(roomId, query, limit || 5)
+
+    // Convert enhanced results back to SearchResult format
+    return enhancedResult.messages.map(msg => ({
+      id: msg.id,
+      room_id: roomId,
+      content: msg.content,
+      author_name: msg.author,
+      message_type: "user", // Default - can be enhanced
+      timestamp: msg.timestamp.toISOString(),
+      score: msg.combinedScore
+    }))
+  } catch (error) {
+    console.warn("Enhanced search failed, using basic search:", error)
+    return store.getRelevantContext(roomId, query, limit)
+  }
 }

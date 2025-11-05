@@ -68,14 +68,6 @@ interface ZAIChatResponse {
   }>
 }
 
-interface ZAIError {
-  error: {
-    message: string
-    type: string
-    code?: string
-  }
-}
-
 export class ZAIClient {
   private apiKey: string
   private baseURL: string
@@ -168,7 +160,7 @@ export class ZAIClient {
     const startTime = Date.now()
 
     // Build system message based on agent style
-    const systemPrompt = this.buildSystemPrompt(agentPrompt, agentStyle)
+    const systemPrompt = this.buildSystemPrompt(agentPrompt)
 
     // Build messages array - Z.ai API doesn't support system role
     // so we prepend system prompt to the first user message
@@ -187,37 +179,26 @@ export class ZAIClient {
       const response = await this.createChatCompletion({
         model: this.defaultModel,
         messages,
-        temperature: this.getTemperatureForStyle(agentStyle),
-        max_tokens: this.getMaxTokensForStyle(agentStyle),
+        temperature: this.getTemperatureForStyle(),
         user_id: userId,
         request_id: `discux3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       })
 
       const processingTime = Date.now() - startTime
 
-      // Extract content from Z.AI API response
-      // Check if response format is Anthropic-style or OpenAI-style
+      // Extract content from Z.AI API response (OpenAI-style format)
       let content: string
       let model: string
       let usage: any
 
-      if (response.content && Array.isArray(response.content)) {
-        // Anthropic API format
-        content = response.content[0]?.text || "I apologize, but I couldn't generate a proper response."
-        model = response.model
-        usage = {
-          prompt_tokens: response.usage?.input_tokens || 0,
-          completion_tokens: response.usage?.output_tokens || 0,
-          total_tokens: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0)
-        }
-      } else if (response.choices && response.choices[0]?.message) {
-        // OpenAI API format
+      if (response.choices && response.choices[0]?.message) {
+        // OpenAI API format - matches the ZAIChatResponse interface
         const message = response.choices[0].message
         content = message.content || message.reasoning_content || "I apologize, but I couldn't generate a proper response."
         model = response.model
         usage = response.usage
       } else {
-        // Fallback
+        // Fallback for unexpected response format
         content = "I apologize, but I couldn't generate a proper response."
         model = "unknown"
         usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
@@ -233,7 +214,7 @@ export class ZAIClient {
       console.error("Z.ai API Error:", error)
 
       // Check for specific error types
-      let fallbackMessage = this.getFallbackResponse(agentStyle, userMessage)
+      let fallbackMessage = this.getFallbackResponse()
 
       if (error instanceof Error) {
         if (error.message.includes("Insufficient balance") || error.message.includes("1113")) {
@@ -256,63 +237,34 @@ export class ZAIClient {
   /**
    * Build system prompt based on agent style
    */
-  private buildSystemPrompt(basePrompt: string, style: string): string {
-    const styleInstructions = {
-      PROFESSIONAL: "You are a professional AI assistant. Respond with formal, well-structured answers that demonstrate expertise and analytical thinking. Use clear, concise language and provide actionable insights.",
-      DIRECT: "You are a direct AI assistant. Respond with straightforward, no-nonsense answers. Get straight to the point, provide practical solutions, and avoid unnecessary elaboration.",
-      FRIENDLY: "You are a friendly AI assistant. Respond with warm, conversational answers that make users feel comfortable. Use encouraging language, show empathy, and maintain a positive tone.",
-      CREATIVE: "You are a creative AI assistant. Respond with innovative, imaginative answers that think outside the box. Use creative language, suggest unconventional approaches, and inspire new ideas.",
-      ANALYTICAL: "You are an analytical AI assistant. Respond with data-driven, logical answers that break down complex problems. Use structured thinking, provide evidence-based reasoning, and consider multiple perspectives."
-    }
+  private buildSystemPrompt(basePrompt: string): string {
+    return `${basePrompt}
 
-    const styleInstruction = styleInstructions[style as keyof typeof styleInstructions] || styleInstructions.PROFESSIONAL
-
-    return `${styleInstruction}\n\n${basePrompt}\n\nImportant guidelines:\n- Stay true to your defined personality and expertise\n- Provide helpful, accurate information\n- Be concise but thorough\n- Adapt your response style to match the specified tone`
+PEDOMAN RESPONSE:
+- Gunakan bahasa Indonesia dalam semua response
+- Format teks biasa saja, tanpa markdown (*, #, \`, dll)
+- Singkat, padat, dan jelas - tidak bertele-tele
+- Tidak perlu penjelasan berlebihan atau omong kosong
+- Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+- Fokus pada kebenaran dan solusi praktis
+- Lawan asumsi yang salah jika perlu
+- Tetap langsung dan berdampak
+- Bersikap brutal jujur, tidak ada basa-basi`
   }
 
   /**
    * Get temperature setting based on agent style
    */
-  private getTemperatureForStyle(style: string): number {
-    const temperatureMap = {
-      PROFESSIONAL: 0.3,
-      DIRECT: 0.1,
-      FRIENDLY: 0.8,
-      CREATIVE: 1.0,
-      ANALYTICAL: 0.2
-    }
-
-    return temperatureMap[style as keyof typeof temperatureMap] || 0.7
+  private getTemperatureForStyle(): number {
+    return 0.1
   }
 
-  /**
-   * Get max tokens based on agent style
-   */
-  private getMaxTokensForStyle(style: string): number {
-    const tokenMap = {
-      PROFESSIONAL: 800,
-      DIRECT: 400,
-      FRIENDLY: 600,
-      CREATIVE: 1000,
-      ANALYTICAL: 900
-    }
-
-    return tokenMap[style as keyof typeof tokenMap] || 600
-  }
-
+  
   /**
    * Get fallback response if API fails
    */
-  private getFallbackResponse(style: string, _userMessage: string): string {
-    const fallbackResponses = {
-      PROFESSIONAL: "I apologize, but I'm currently experiencing technical difficulties. Please try again later for a comprehensive response to your inquiry.",
-      DIRECT: "Sorry, having technical issues right now. Please try again.",
-      FRIENDLY: "Oh dear! It seems I'm having a bit of technical trouble at the moment. Could you please try asking me again in a moment? 😊",
-      CREATIVE: "Oops! My creative circuits are having a momentary glitch. Let's reconnect in a moment and explore some innovative ideas together!",
-      ANALYTICAL: "Error detected: Unable to process request at this time. Please retry your query for a structured analysis."
-    }
-
-    return fallbackResponses[style as keyof typeof fallbackResponses] || "I'm experiencing technical difficulties. Please try again."
+  private getFallbackResponse(): string {
+    return "Tidak bisa memberikan respon sekarang. Coba lagi."
   }
 
   /**

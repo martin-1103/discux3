@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getMessages, createMessage, createAgentMessage } from "@/lib/actions/messages"
 import { generateBatchAgentResponses } from "@/lib/actions/ai"
+import { ClearHistoryButton } from "./ClearHistoryButton"
+import { getUserRoleInRoom } from "@/lib/actions/rooms"
 
 interface Message {
   id: string
@@ -65,6 +67,7 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState<string[]>([])
+  const [userRole, setUserRole] = useState<"OWNER" | "ADMIN" | "MEMBER" | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -81,6 +84,19 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
     } catch (error) {
       console.error("Failed to load messages:", error)
     }
+  }, [roomId, currentUserId])
+
+  // Load user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const role = await getUserRoleInRoom(roomId, currentUserId)
+        setUserRole(role)
+      } catch (error) {
+        console.error("Failed to fetch user role:", error)
+      }
+    }
+    fetchUserRole()
   }, [roomId, currentUserId])
 
   // Load initial messages
@@ -247,6 +263,28 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
 
   return (
     <div className="flex flex-col h-full">
+      {/* Chat Header */}
+      <div className="border-b bg-white px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">{room.name}</h2>
+              <p className="text-sm text-muted-foreground">
+                {room.agents.length} agents available
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <ClearHistoryButton
+              roomId={roomId}
+              currentUserId={currentUserId}
+              userRole={userRole || "MEMBER"}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">

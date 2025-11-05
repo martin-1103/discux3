@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/db"
-import { 
-  createMessageSchema, 
-  type CreateMessageInput 
+import {
+  createMessageSchema,
+  type CreateMessageInput
 } from "@/lib/validations"
 import { storeConversationMessage } from "../vector-store"
 import { incrementAgentUsage } from "./agents"
 import { generateAgentResponse } from "./ai"
+import { getVectorStore } from "../vector-store"
 
 /**
  * Get messages for a room
@@ -169,10 +170,10 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
 
     // Convert Decimal objects to numbers for Client Component compatibility
     const serializedMessage = {
-      ...newMessage,
-      processingTime: newMessage.processingTime ? Number(newMessage.processingTime) : null,
-      agentConfidence: newMessage.agentConfidence ? Number(newMessage.agentConfidence) : null,
-      timestamp: newMessage.timestamp
+      ...message,
+      processingTime: message.processingTime ? Number(message.processingTime) : null,
+      agentConfidence: message.agentConfidence ? Number(message.agentConfidence) : null,
+      timestamp: message.timestamp
     }
 
     // Store message in vector database for context
@@ -200,21 +201,51 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
     if (agentMentions.length > 0) {
       console.log(`[Messages] Triggering agent responses for ${agentMentions.length} agents`)
 
-      // Generate responses for each mentioned agent
-      agentMentions.forEach(async (agentId) => {
+      // Check if this should be a discussion (multiple agents or explicit discussion command)
+      const isDiscussionMode = agentMentions.length >= 2 ||
+        validatedData.content.toLowerCase().includes('discuss') ||
+        validatedData.content.toLowerCase().includes('debate') ||
+        validatedData.content.toLowerCase().includes('analyze')
+
+      if (isDiscussionMode && agentMentions.length >= 2) {
+        // Start a multi-agent discussion
+        console.log(`[Messages] Starting multi-agent discussion with ${agentMentions.length} agents`)
+
+        // Determine intensity based on content and agent types
+        const intensity = determineDiscussionIntensity(validatedData.content, agentMentions, room.agents)
+
         try {
-          await generateAgentResponse(
-            agentId,
+          const { createDiscussion } = await import("@/lib/services/discussion-orchestrator")
+          const discussionResult = await createDiscussion(
             validatedData.roomId,
-            validatedData.content,
-            validatedData.senderId,
-            message.sender?.name || "User"
+            message.id,
+            agentMentions,
+            extractTopic(validatedData.content),
+            intensity
           )
-          console.log(`[Messages] Agent response generated for agent: ${agentId}`)
+
+          if (discussionResult.success) {
+            console.log(`[Messages] Discussion created: ${discussionResult.data.id}`)
+
+            // Execute discussion asynchronously
+            const { executeDiscussion } = await import("@/lib/services/discussion-orchestrator")
+            executeDiscussion(
+              discussionResult.data.id,
+              validatedData.senderId,
+              message.sender?.name || "User"
+            ).catch(error => {
+              console.error("[Messages] Failed to execute discussion:", error)
+            })
+          }
         } catch (error) {
-          console.error(`[Messages] Failed to generate response for agent ${agentId}:`, error)
+          console.error("[Messages] Failed to create discussion:", error)
+          // Fallback to individual agent responses
+          triggerIndividualAgentResponses(agentMentions, validatedData, message)
         }
-      })
+      } else {
+        // Individual agent responses (existing behavior)
+        triggerIndividualAgentResponses(agentMentions, validatedData, message)
+      }
     }
 
     revalidatePath(`/rooms/${validatedData.roomId}/chat`)
@@ -396,6 +427,104 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
 }
 
 /**
+ * Trigger individual agent responses (fallback for non-discussion mode)
+ */
+function triggerIndividualAgentResponses(
+  agentMentions: string[],
+  validatedData: CreateMessageInput,
+  message: any
+) {
+  console.log(`[Messages] Triggering individual agent responses for ${agentMentions.length} agents`)
+
+  // Generate responses for each mentioned agent
+  agentMentions.forEach(async (agentId) => {
+    try {
+      await generateAgentResponse(
+        agentId,
+        validatedData.roomId,
+        validatedData.content,
+        validatedData.senderId,
+        message.sender?.name || "User"
+      )
+      console.log(`[Messages] Agent response generated for agent: ${agentId}`)
+    } catch (error) {
+      console.error(`[Messages] Failed to generate response for agent ${agentId}:`, error)
+    }
+  })
+}
+
+/**
+ * Determine discussion intensity based on content and agent types
+ */
+function determineDiscussionIntensity(
+  content: string,
+  agentIds: string[],
+  roomAgents: Array<{ agent: { id: string, style: string } }>
+): 'NORMAL' | 'BRUTAL' | 'INTENSE' | 'EXTREME' {
+  const contentLower = content.toLowerCase()
+
+  // Check for brutal mode keywords
+  const brutalKeywords = [
+    'brutal', 'harsh', 'unfiltered', 'honest', 'truth', 'no bullshit',
+    'critical', 'reality check', 'call me out', 'challenge me'
+  ]
+
+  // Check for intense mode keywords
+  const intenseKeywords = [
+    'intense', 'deep dive', 'analyze thoroughly', 'examine', 'critique',
+    'detailed analysis', 'break it down', 'serious discussion'
+  ]
+
+  // Check if any mentioned agents are brutal advisors
+  const mentionedAgents = roomAgents
+    .filter(ra => agentIds.includes(ra.agent.id))
+    .map(ra => ra.agent.style)
+
+  const hasBrutalAgents = mentionedAgents.some(style =>
+    ['BRUTAL_MENTOR', 'STRATEGIC_CHALLENGER', 'GROWTH_ACCELERATOR',
+     'EXECUTION_DRILL_SERGEANT', 'TRUTH_TELLER'].includes(style)
+  )
+
+  // Determine intensity
+  if (brutalKeywords.some(keyword => contentLower.includes(keyword)) || hasBrutalAgents) {
+    return 'BRUTAL'
+  } else if (intenseKeywords.some(keyword => contentLower.includes(keyword))) {
+    return 'INTENSE'
+  } else if (contentLower.includes('extreme') || contentLower.includes('no limits')) {
+    return 'EXTREME'
+  }
+
+  return 'NORMAL'
+}
+
+/**
+ * Extract topic from message content
+ */
+function extractTopic(content: string): string | undefined {
+  // Simple topic extraction - can be enhanced with AI
+  const topicPatterns = [
+    /about (.+?)(?:\?|$|\.|!)/i,
+    /regarding (.+?)(?:\?|$|\.|!)/i,
+    /discuss (.+?)(?:\?|$|\.|!)/i,
+    /analyze (.+?)(?:\?|$|\.|!)/i
+  ]
+
+  for (const pattern of topicPatterns) {
+    const match = content.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+
+  // If no specific topic found, use first 50 characters
+  if (content.length > 20) {
+    return content.substring(0, 50).trim() + (content.length > 50 ? '...' : '')
+  }
+
+  return undefined
+}
+
+/**
  * Get room statistics
  */
 export async function getRoomStats(roomId: string, userId: string) {
@@ -406,7 +535,7 @@ export async function getRoomStats(roomId: string, userId: string) {
         id: roomId,
         OR: [
           { createdBy: userId },
-          { 
+          {
             participants: {
               some: { userId }
             }
@@ -440,8 +569,8 @@ export async function getRoomStats(roomId: string, userId: string) {
       return acc
     }, {} as Record<string, number>)
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         totalMessages,
         ...messageCountByType
@@ -450,5 +579,118 @@ export async function getRoomStats(roomId: string, userId: string) {
   } catch (error) {
     console.error("Error fetching room stats:", error)
     return { success: false, error: "Failed to fetch room stats" }
+  }
+}
+
+/**
+ * Clear all messages in a room (Admin/Owner only)
+ */
+export async function clearRoomHistory(roomId: string, userId: string) {
+  try {
+    // Verify user has admin or owner permissions
+    const room = await prisma.room.findFirst({
+      where: {
+        id: roomId,
+        participants: {
+          some: {
+            userId,
+            role: { in: ["OWNER", "ADMIN"] }
+          }
+        }
+      },
+      include: {
+        participants: {
+          where: {
+            userId,
+            role: { in: ["OWNER", "ADMIN"] }
+          },
+          select: {
+            role: true
+          }
+        }
+      }
+    })
+
+    if (!room) {
+      return { success: false, error: "Room not found or insufficient permissions" }
+    }
+
+    const userRole = room.participants[0]?.role
+
+    // Get all message IDs for vector cleanup before deletion
+    const messages = await prisma.message.findMany({
+      where: { roomId },
+      select: { id: true }
+    })
+
+    const messageIds = messages.map(msg => msg.id)
+    console.log(`[ClearHistory] Found ${messageIds.length} messages to delete from room ${roomId}`)
+
+    // Delete from MySQL in transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete in proper order to respect foreign key constraints
+      await tx.discussionResponse.deleteMany({
+        where: {
+          message: {
+            roomId
+          }
+        }
+      })
+
+      await tx.discussion.deleteMany({
+        where: { roomId }
+      })
+
+      await tx.messageMention.deleteMany({
+        where: {
+          message: {
+            roomId
+          }
+        }
+      })
+
+      await tx.message.deleteMany({
+        where: { roomId }
+      })
+    })
+
+    console.log(`[ClearHistory] Successfully deleted ${messageIds.length} messages from MySQL`)
+
+    // Clean up vector database
+    try {
+      const vectorStore = getVectorStore()
+      await vectorStore.deleteRoomMessages(roomId)
+      console.log(`[ClearHistory] Successfully deleted messages from vector database`)
+    } catch (vectorError) {
+      console.error("[ClearHistory] Failed to delete from vector database:", vectorError)
+      // Don't fail the operation if vector cleanup fails
+    }
+
+    // Clean up vector ID mappings for deleted messages
+    try {
+      if (messageIds.length > 0) {
+        await prisma.vectorIdMapping.deleteMany({
+          where: {
+            cuidId: { in: messageIds }
+          }
+        })
+        console.log(`[ClearHistory] Successfully cleaned up ${messageIds.length} vector ID mappings`)
+      }
+    } catch (mappingError) {
+      console.error("[ClearHistory] Failed to clean up vector ID mappings:", mappingError)
+      // Don't fail the operation if mapping cleanup fails
+    }
+
+    revalidatePath(`/rooms/${roomId}/chat`)
+
+    return {
+      success: true,
+      message: `Successfully cleared ${messageIds.length} messages from room history`,
+      deletedCount: messageIds.length,
+      clearedBy: userRole
+    }
+  } catch (error) {
+    console.error("[ClearHistory] Error clearing room history:", error)
+    return { success: false, error: "Failed to clear room history" }
   }
 }

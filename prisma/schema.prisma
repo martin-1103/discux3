@@ -102,8 +102,9 @@ model Agent {
   createdBy String @map("created_by")
   creator   User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
-  roomAgents RoomAgent[]
-  mentions   MessageMention[]
+  roomAgents       RoomAgent[]
+  mentions         MessageMention[]
+  discussionResponses DiscussionResponse[]
 
   @@index([createdBy])
   @@index([style])
@@ -127,6 +128,7 @@ model Room {
   agents       RoomAgent[]
   messages     Message[]
   invitations  RoomInvitation[]
+  discussions  Discussion[]
 
   @@index([createdBy])
   @@index([isActive])
@@ -189,9 +191,11 @@ model Message {
   contextLength    Int?        @map("context_length")
   timestamp        DateTime    @default(now())
 
-  room     Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender   User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  mentions MessageMention[]
+  room       Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender     User                  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  mentions   MessageMention[]
+  discussionResponses DiscussionResponse[]
+  discussions Discussion[]
 
   @@index([roomId, timestamp])
   @@index([senderId])
@@ -211,6 +215,50 @@ model MessageMention {
   @@index([messageId])
   @@index([mentionedAgentId])
   @@map("message_mentions")
+}
+
+model Discussion {
+  id          String            @id @default(cuid())
+  roomId      String            @map("room_id")
+  messageId   String            @map("message_id") // Initial user message that started discussion
+  status      DiscussionStatus  @default(ACTIVE)
+  topic       String?           @db.Text
+  turnOrder   String            @db.Text // JSON string of agent IDs in order
+  currentTurn Int               @default(0)
+  maxTurns    Int               @default(10) // Prevent infinite discussions
+  intensity   DiscussionIntensity @default(NORMAL)
+  metadata    Json?             // Discussion settings and context
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  room     Room                @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  message  Message             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  responses DiscussionResponse[]
+
+  @@index([roomId])
+  @@index([status])
+  @@index([messageId])
+  @@map("discussions")
+}
+
+model DiscussionResponse {
+  id           String   @id @default(cuid())
+  discussionId String   @map("discussion_id")
+  agentId      String   @map("agent_id")
+  messageId    String   @map("message_id")
+  turnOrder    Int
+  respondingTo String?  @map("responding_to") // Previous agent ID if responding to another agent
+  responseTo   String?  @map("response_to")   // Previous message ID this is responding to
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  message    Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([discussionId])
+  @@index([agentId])
+  @@index([messageId])
+  @@map("discussion_responses")
 }
 
 model RoomInvitation {
@@ -242,6 +290,11 @@ enum AgentStyle {
   FRIENDLY
   CREATIVE
   ANALYTICAL
+  BRUTAL_MENTOR
+  STRATEGIC_CHALLENGER
+  GROWTH_ACCELERATOR
+  EXECUTION_DRILL_SERGEANT
+  TRUTH_TELLER
 }
 
 enum Subscription {
@@ -260,6 +313,20 @@ enum MessageType {
   USER
   AGENT
   SYSTEM
+}
+
+enum DiscussionStatus {
+  ACTIVE
+  PAUSED
+  CONCLUDED
+  STOPPED
+}
+
+enum DiscussionIntensity {
+  NORMAL
+  BRUTAL
+  INTENSE
+  EXTREME
 }
 
 // ============================================

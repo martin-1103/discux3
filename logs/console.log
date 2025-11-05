@@ -1,1 +1,857 @@
-[2025-11-05T01:32:04.129Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:21:58.610Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:12.191Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:12.192Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:15.186Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:15.188Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:20.756Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:20.757Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:20.758Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:28.689Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:28.690Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:28.690Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:28.691Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:28.692Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:22:50.644Z] WARN: Api key is used with unsecure connection.
+[2025-11-05T04:22:50.644Z] WARN: Api key is used with unsecure connection.
+[2025-11-05T04:22:50.645Z] WARN: Api key is used with unsecure connection.
+[2025-11-05T04:22:50.646Z] WARN: Api key is used with unsecure connection.
+[2025-11-05T04:22:50.646Z] WARN: Api key is used with unsecure connection.
+[2025-11-05T04:38:33.589Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:38:33.590Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:38:33.591Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:38:33.591Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:38:33.592Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T04:38:33.593Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:01:16.469Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:16.473Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:16.476Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:16.478Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:16.479Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:16.481Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:19.596Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:19.597Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:19.599Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:19.600Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:19.601Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:19.602Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:24.420Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:24.424Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:24.427Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:24.429Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:24.431Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:24.433Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:28.847Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:28.851Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:28.853Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:28.855Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:28.856Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:28.858Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:33.325Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:33.328Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:33.331Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:33.333Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:33.335Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:33.337Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:251:1]
+ [2m251[0m | 
+ [2m252[0m | PEDOMAN RESPONSE:
+ [2m253[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m254[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m255[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m256[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m257[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:41.830Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:250:1]
+ [2m250[0m | 
+ [2m251[0m | PEDOMAN RESPONSE:
+ [2m252[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m253[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m254[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m255[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m256[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:41.831Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:250:1]
+ [2m250[0m | 
+ [2m251[0m | PEDOMAN RESPONSE:
+ [2m252[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m253[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m254[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m255[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m256[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:41.832Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:250:1]
+ [2m250[0m | 
+ [2m251[0m | PEDOMAN RESPONSE:
+ [2m252[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m253[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m254[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m255[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m256[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:41.833Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:250:1]
+ [2m250[0m | 
+ [2m251[0m | PEDOMAN RESPONSE:
+ [2m252[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m253[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m254[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m255[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m256[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:41.835Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:250:1]
+ [2m250[0m | 
+ [2m251[0m | PEDOMAN RESPONSE:
+ [2m252[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m253[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m254[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m255[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m256[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:01:41.836Z] ERROR:  ⨯ ./src/lib/zai.ts
+Error: 
+  [31mx[0m Expected ';', got ')'
+     ,-[[36;1;4mD:\Project\discux3\src\lib\zai.ts[0m:250:1]
+ [2m250[0m | 
+ [2m251[0m | PEDOMAN RESPONSE:
+ [2m252[0m | - Gunakan bahasa Indonesia dalam semua response
+ [2m253[0m | - Format teks biasa saja, tanpa markdown (*, #, `, dll)
+     : [31;1m                                                      ^[0m
+ [2m254[0m | - Singkat, padat, dan jelas - tidak bertele-tele
+ [2m255[0m | - Tidak perlu penjelasan berlebihan atau omong kosong
+ [2m256[0m | - Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/zai.ts
+./src/lib/actions/ai.ts
+./src/lib/actions/messages.ts
+[2025-11-05T05:03:06.872Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:06.874Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:06.875Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:06.876Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:06.876Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:06.877Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:06.878Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.536Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.537Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.538Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.538Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.539Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.540Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:10.541Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.989Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.990Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.990Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.991Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.992Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.993Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.993Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:13.994Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.859Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.860Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.861Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.861Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.862Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.862Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.863Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.864Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:23.864Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.878Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.879Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.879Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.880Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.880Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.881Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.881Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.882Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.882Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:03:48.883Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.881Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.882Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.882Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.883Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.883Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.884Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.885Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.885Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.886Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.886Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:16.887Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.664Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.665Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.665Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.666Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.667Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.667Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.668Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.669Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.670Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.671Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.671Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:04:58.672Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.090Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.092Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.092Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.093Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.093Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.094Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.095Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.096Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.097Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.098Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.099Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.099Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
+[2025-11-05T05:20:00.100Z] WARN: [33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev#debug-enabled
