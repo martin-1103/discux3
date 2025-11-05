@@ -71,9 +71,10 @@ interface ChatInterfaceProps {
   roomId: string
   room: Room
   currentUserId: string
+  currentUserName: string | null
 }
 
-export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProps) {
+export function ChatInterface({ roomId, room, currentUserId, currentUserName }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -91,7 +92,10 @@ export function ChatInterface({ roomId, room, currentUserId }: ChatInterfaceProp
   const inputRef = useRef<HTMLInputElement>(null)
 
   // WebSocket integration
-  const { socket, isConnected, joinRoom, sendMessage } = useSocket()
+  const { socket, isConnected, joinRoom, sendMessage } = useSocket({
+    userId: currentUserId,
+    userName: currentUserName || undefined
+  })
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })

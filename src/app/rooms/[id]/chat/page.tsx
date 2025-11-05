@@ -59,10 +59,11 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
       {/* Chat Interface */}
       <div className="flex-1 overflow-hidden">
-        <ChatInterface 
-          roomId={params.id} 
+        <ChatInterface
+          roomId={params.id}
           room={room}
           currentUserId={user.id}
+          currentUserName={user.name}
         />
       </div>
     </div>

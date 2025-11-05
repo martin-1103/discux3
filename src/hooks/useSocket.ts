@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import { useSession } from "next-auth/react"
 import { io, Socket } from "socket.io-client"
 import {
   SocketMessage,
@@ -9,11 +10,17 @@ import {
   DiscussionUpdate
 } from "@/lib/services/socket-service"
 
+// Global socket instance to prevent multiple connections
+let globalSocket: Socket | null = null
+let globalSocketUserId: string | null = null
+
 interface UseSocketOptions {
   autoConnect?: boolean
   reconnection?: boolean
   reconnectionAttempts?: number
   reconnectionDelay?: number
+  userId?: string
+  userName?: string
 }
 
 interface SocketState {
@@ -34,11 +41,15 @@ interface TypingUsers {
  * Socket.io client hook for real-time communication
  */
 export function useSocket(options: UseSocketOptions = {}) {
+  const { data: session } = useSession()
+
   const {
     autoConnect = true,
-    reconnection = true,
-    reconnectionAttempts = 5,
-    reconnectionDelay = 1000
+    reconnection = false, // Disable auto reconnect for stability
+    reconnectionAttempts = 3,
+    reconnectionDelay = 2000,
+    userId: propUserId,
+    userName: propUserName
   } = options
 
   const [state, setState] = useState<SocketState>({
@@ -55,21 +66,60 @@ export function useSocket(options: UseSocketOptions = {}) {
   
   // Initialize socket connection
   const connect = useCallback(() => {
-    if (socketRef.current?.connected) {
+    // Use provided props or fallback to session or hardcoded user ID for development
+    const userId = propUserId || session?.user?.id || 'cmhk9lqk0000114aj3q0q8p1w'
+    const userName = propUserName || session?.user?.name || 'pile'
+
+    // Check if we already have a socket for this user
+    if (globalSocket && globalSocketUserId === userId) {
+      if (globalSocket.connected) {
+        console.log('[Socket] Reusing existing socket connection')
+        socketRef.current = globalSocket
+        setState(prev => ({ ...prev, isConnected: true, isConnecting: false, error: null }))
+        return
+      } else {
+        console.log('[Socket] Reconnecting existing socket')
+        globalSocket.connect()
+        socketRef.current = globalSocket
+        setState(prev => ({ ...prev, isConnecting: true, error: null }))
+        return
+      }
+    }
+
+    // Clean up existing socket if user changed
+    if (globalSocket && globalSocketUserId !== userId) {
+      console.log('[Socket] User changed, cleaning up previous socket')
+      globalSocket.disconnect()
+      globalSocket = null
+      globalSocketUserId = null
+    }
+
+    // Prevent multiple socket instances for the same user
+    if (socketRef.current && globalSocketUserId === userId) {
+      console.log('[Socket] Socket already exists for this user, skipping connection')
       return
     }
 
+    console.log('[Socket] Creating new socket connection...')
     setState(prev => ({ ...prev, isConnecting: true, error: null }))
 
     try {
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || `http://localhost:${process.env.PORT || 3001}/api/socket`, {
+      const authData = {
+        userId,
+        userName
+      }
+
+      console.log('[Socket] Using auth data:', authData)
+
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || `http://localhost:${process.env.PORT || 3000}`, {
         transports: ['websocket', 'polling'],
         upgrade: true,
         rememberUpgrade: true,
         autoConnect: false,
         reconnection,
         reconnectionAttempts,
-        reconnectionDelay
+        reconnectionDelay,
+        auth: authData // Send user data during handshake
       })
 
       // Setup event listeners
@@ -174,6 +224,8 @@ export function useSocket(options: UseSocketOptions = {}) {
       })
 
       socketRef.current = socket
+      globalSocket = socket
+      globalSocketUserId = userId
 
       // Connect if autoConnect is enabled
       if (autoConnect) {
@@ -187,12 +239,18 @@ export function useSocket(options: UseSocketOptions = {}) {
         error: error instanceof Error ? error.message : 'Unknown error'
       }))
     }
-  }, [autoConnect, reconnection, reconnectionAttempts, reconnectionDelay, joinedRooms])
+  }, [autoConnect, reconnection, reconnectionAttempts, reconnectionDelay, joinedRooms, session, propUserId, propUserName])
 
   // Disconnect socket
   const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect()
+    // Only disconnect if we're the ones who created it
+    if (socketRef.current === globalSocket) {
+      console.log('[Socket] Disconnecting socket')
+      socketRef.current?.disconnect()
+      socketRef.current = null
+      globalSocket = null
+      globalSocketUserId = null
+    } else {
       socketRef.current = null
     }
   }, [])

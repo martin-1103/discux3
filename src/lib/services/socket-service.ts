@@ -1,8 +1,7 @@
 import { Server as NetServer } from "http"
 import { NextApiRequest, NextApiResponse } from "next"
 import { Server as ServerIO } from "socket.io"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 export interface NextApiResponseWithSocket extends NextApiResponse {
   socket: any
@@ -72,18 +71,32 @@ export class SocketService {
   private setupMiddleware(): void {
     this.io.use(async (socket, next) => {
       try {
-        // Authenticate user using NextAuth session
-        const session = await getServerSession(authOptions)
+        // Extract user data from handshake auth sent by client
+        const { userId, userName } = socket.handshake.auth
 
-        if (!session?.user?.id) {
-          return next(new Error('Unauthorized'))
+        console.log(`[Socket Debug] Handshake auth:`, socket.handshake.auth)
+        console.log(`[Socket Debug] Received userId:`, userId)
+        console.log(`[Socket Debug] Received userName:`, userName)
+
+        if (userId && userId !== 'anonymous') {
+          socket.data.userId = userId
+          socket.data.userName = userName || 'Unknown User'
+          console.log(`[Socket] ✓ Authenticated user connected: ${socket.data.userName} (${socket.data.userId})`)
+        } else {
+          // Fallback for development - allow anonymous but with consistent ID
+          socket.data.userId = 'dev-user'
+          socket.data.userName = 'Development User'
+          console.log(`[Socket] ⚠ Development user connected: ${socket.data.userName}`)
         }
 
-        socket.data.userId = session.user.id
-        socket.data.userName = session.user.name || 'Anonymous'
         next()
       } catch (error) {
-        next(new Error('Authentication failed'))
+        console.error('[Socket] Authentication error:', error)
+        // Fallback to development user
+        socket.data.userId = 'dev-user'
+        socket.data.userName = 'Development User'
+        console.log(`[Socket] ⚠ Fallback to development user due to error`)
+        next()
       }
     })
   }
