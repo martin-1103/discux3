@@ -1,5 +1,49 @@
 import winston from 'winston';
 
+// Extended logger interface with AI-specific methods
+interface ExtendedLogger extends winston.Logger {
+  aiRequest: (correlationId: string, request: {
+    endpoint?: string;
+    model?: string;
+    prompt?: string;
+    temperature?: number;
+    maxTokens?: number;
+    headers?: any;
+    [key: string]: any;
+  }) => void;
+
+  aiResponse: (correlationId: string, response: {
+    status?: number;
+    statusText?: string;
+    duration?: number;
+    rawBody?: string;
+    headers?: any;
+    [key: string]: any;
+  }) => void;
+
+  aiError: (correlationId: string, message: string, error?: Error | any, context?: {
+    request?: any;
+    response?: any;
+    [key: string]: any;
+  }) => void;
+
+  aiIntent: (correlationId: string, context: {
+    query: string;
+    intent?: any;
+    confidence?: number;
+    fallback?: boolean;
+    [key: string]: any;
+  }) => void;
+
+  aiContext: (correlationId: string, context: {
+    query: string;
+    resultCount?: number;
+    searchDuration?: number;
+    contextUsed?: boolean;
+    [key: string]: any;
+  }) => void;
+}
+
 // Define log levels
 const levels = {
   error: 0,
@@ -96,7 +140,7 @@ const logger = winston.createLogger({
   levels,
   transports,
   exitOnError: false,
-});
+}) as ExtendedLogger;
 
 // Helper function to gather system context
 const getSystemContext = () => {
@@ -213,6 +257,106 @@ logger.validation = (message: string, error?: Error | any, context?: {
   });
 };
 
+// AI-specific logging methods with correlation IDs
+const generateCorrelationId = () => {
+  return `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Sanitize sensitive data from logs
+const sanitizeData = (data: any): any => {
+  if (!data || typeof data !== 'object') return data;
+
+  const sensitiveFields = ['apiKey', 'token', 'password', 'secret', 'key'];
+  const sanitized = { ...data };
+
+  for (const key in sanitized) {
+    if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeData(sanitized[key]);
+    }
+  }
+
+  return sanitized;
+};
+
+// AI Request logging
+logger.aiRequest = (correlationId: string, request: {
+  endpoint?: string;
+  model?: string;
+  prompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+  headers?: any;
+  [key: string]: any;
+}) => {
+  logger.info('AI Request Started', {
+    category: 'ai_request',
+    correlationId,
+    ...sanitizeData(request)
+  });
+};
+
+// AI Response logging
+logger.aiResponse = (correlationId: string, response: {
+  status?: number;
+  statusText?: string;
+  duration?: number;
+  rawBody?: string;
+  headers?: any;
+  [key: string]: any;
+}) => {
+  logger.info('AI Response Received', {
+    category: 'ai_response',
+    correlationId,
+    ...sanitizeData(response)
+  });
+};
+
+// AI Error logging with full context
+logger.aiError = (correlationId: string, message: string, error?: Error | any, context?: {
+  request?: any;
+  response?: any;
+  [key: string]: any;
+}) => {
+  logger.detailedError(message, error, {
+    category: 'ai_error',
+    correlationId,
+    ...sanitizeData(context)
+  });
+};
+
+// AI Intent Analysis logging
+logger.aiIntent = (correlationId: string, context: {
+  query: string;
+  intent?: any;
+  confidence?: number;
+  fallback?: boolean;
+  [key: string]: any;
+}) => {
+  const level = context.fallback ? 'warn' : 'info';
+  logger[level](`AI Intent Analysis${context.fallback ? ' (Fallback)' : ''}`, {
+    category: 'ai_intent',
+    correlationId,
+    ...sanitizeData(context)
+  });
+};
+
+// AI Context Search logging
+logger.aiContext = (correlationId: string, context: {
+  query: string;
+  resultCount?: number;
+  searchDuration?: number;
+  contextUsed?: boolean;
+  [key: string]: any;
+}) => {
+  logger.info('AI Context Search', {
+    category: 'ai_context',
+    correlationId,
+    ...sanitizeData(context)
+  });
+};
+
 // Create a stream for Morgan HTTP logging (convert HTTP errors to detailed errors)
 logger.stream = {
   write: (message: string) => {
@@ -234,5 +378,7 @@ logger.stream = {
     }
   }
 };
+
+export { generateCorrelationId };
 
 export default logger;

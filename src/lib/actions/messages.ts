@@ -392,8 +392,8 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
   console.log(`[Messages] Extracting mentions from content: "${content}"`)
   console.log(`[Messages] Available room agents:`, roomAgents.map(ra => ({ id: ra.agent.id, name: ra.agent.name })))
 
-  // Find @mentions in the content
-  const mentionRegex = /@(\w+)/g
+  // Find @mentions in the content (supports emojis and spaces)
+  const mentionRegex = /@([^\s]+)/g
   let match
 
   while ((match = mentionRegex.exec(content)) !== null) {
@@ -407,8 +407,13 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
       console.log(`[Messages] @all mention - adding all agent IDs:`, allAgentIds)
       mentions.push(...allAgentIds)
     } else {
-      // Find matching agent in room
+      // Remove emojis and extra spaces from mention for matching
+      const cleanMentionName = mentionName.replace(/[\p{Emoji_Presentation}\p{Emoji}\u200D]+/gu, '').trim()
+      console.log(`[Messages] Cleaned mention name: "${cleanMentionName}"`)
+
+      // Find matching agent in room (try both original mention and cleaned version)
       const agent = roomAgents.find(roomAgent =>
+        roomAgent.agent.name.toLowerCase() === cleanMentionName ||
         roomAgent.agent.name.toLowerCase() === mentionName
       )
 
@@ -416,7 +421,8 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
         console.log(`[Messages] Found matching agent: ${agent.name} (${agent.agent.id})`)
         mentions.push(agent.agent.id)
       } else {
-        console.log(`[Messages] No agent found with name: ${mentionName}`)
+        console.log(`[Messages] No agent found with name: "${mentionName}" or "${cleanMentionName}"`)
+        console.log(`[Messages] Available agents:`, roomAgents.map(ra => ra.agent.name.toLowerCase()))
       }
     }
   }

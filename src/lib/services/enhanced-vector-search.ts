@@ -1,6 +1,7 @@
 import { getVectorStore } from "@/lib/vector-store"
 import { getZAIClient } from "@/lib/zai"
 import { prisma } from "@/lib/db"
+import logger from "@/lib/logger"
 
 interface QueryIntent {
   primaryIntent: 'retrieve' | 'summarize' | 'analyze' | 'compare' | 'find_decisions'
@@ -199,8 +200,10 @@ export class EnhancedVectorSearch {
    * Analyze user intent using AI
    */
   private async analyzeUserIntent(userQuery: string): Promise<QueryIntent> {
+    const correlationId = `intent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
     const prompt = `
-Analyze the user's query and determine their intent. Respond with a JSON object containing:
+Analyze the user's query and determine their intent. Respond ONLY with a valid JSON object containing:
 
 1. primaryIntent: One of - retrieve (get information), summarize (get summary), analyze (deep analysis), compare (compare different points), find_decisions (find conclusions made)
 2. timeReference: When the user is asking about - recent, yesterday, last_week, specific_date, all_time
@@ -209,37 +212,129 @@ Analyze the user's query and determine their intent. Respond with a JSON object 
 5. responseFormat: How they want the response - summary, detailed, bullet_points, action_items
 6. confidence: How confident you are in this analysis (0-1)
 
+IMPORTANT: Your entire response must be valid JSON only. No explanations, no markdown, no "Here is the JSON:", just the JSON object itself.
+
 User query: "${userQuery}"
 
-Respond only with valid JSON, no explanations:
+Example response format:
+{"primaryIntent": "retrieve", "timeReference": "recent", "topicFocus": "project updates", "participantFocus": [], "responseFormat": "detailed", "confidence": 0.8}
 `
+
+    logger.aiRequest(correlationId, {
+      endpoint: 'analyzeUserIntent',
+      model: 'intent-analysis',
+      purpose: 'Query intent analysis',
+      userQueryLength: userQuery.length,
+      userQueryPreview: userQuery.substring(0, 100) + (userQuery.length > 100 ? '...' : '')
+    })
 
     try {
       const response = await this.zaiClient.generateAgentResponse("", "PROFESSIONAL", prompt)
 
-      // Parse AI response
-      const intentText = response.content.replace(/```json\n?|\n?```/g, '').trim()
-      const intent = JSON.parse(intentText) as QueryIntent
+      // Log the raw AI response for debugging
+      logger.aiResponse(correlationId, {
+        status: 200,
+        statusText: 'AI response received',
+        rawBody: response.content.substring(0, 300) + (response.content.length > 300 ? '...' : ''),
+        model: response.model,
+        processingTime: response.processingTime
+      })
+
+      // Clean and validate AI response
+      const intentText = response.content
+        .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
+        .replace(/^[^{]*/, '') // Remove any text before first {
+        .replace(/[^}]*$/, '') // Remove any text after last }
+        .trim()
+
+      // Check if response looks like JSON
+      if (!intentText.startsWith('{') || !intentText.endsWith('}')) {
+        logger.aiIntent(correlationId, {
+          query: userQuery,
+          fallback: true,
+          reason: 'Response does not appear to be JSON',
+          rawResponse: response.content.substring(0, 200)
+        })
+
+        return {
+          primaryIntent: 'retrieve',
+          timeReference: 'all_time',
+          responseFormat: 'detailed',
+          confidence: 0.3
+        }
+      }
+
+      let intent: QueryIntent
+      try {
+        intent = JSON.parse(intentText) as QueryIntent
+      } catch (parseError) {
+        logger.aiError(correlationId, 'JSON parsing failed for intent analysis', parseError instanceof Error ? parseError : new Error(String(parseError)), {
+          request: {
+            userQuery: userQuery.substring(0, 100),
+            promptLength: prompt.length
+          },
+          response: {
+            rawContent: response.content.substring(0, 500),
+            cleanedText: intentText.substring(0, 500)
+          }
+        })
+
+        return {
+          primaryIntent: 'retrieve',
+          timeReference: 'all_time',
+          responseFormat: 'detailed',
+          confidence: 0.3
+        }
+      }
 
       // Validate and fix intent
-      return {
-        primaryIntent: intent.primaryIntent || 'retrieve',
-        timeReference: intent.timeReference || 'all_time',
+      const validatedIntent: QueryIntent = {
+        primaryIntent: ['retrieve', 'summarize', 'analyze', 'compare', 'find_decisions'].includes(intent.primaryIntent)
+          ? intent.primaryIntent
+          : 'retrieve',
+        timeReference: ['recent', 'yesterday', 'last_week', 'specific_date', 'all_time'].includes(intent.timeReference)
+          ? intent.timeReference
+          : 'all_time',
         topicFocus: intent.topicFocus,
-        participantFocus: intent.participantFocus || [],
-        responseFormat: intent.responseFormat || 'detailed',
-        confidence: Math.max(0.1, Math.min(1.0, intent.confidence || 0.5))
+        participantFocus: Array.isArray(intent.participantFocus) ? intent.participantFocus : [],
+        responseFormat: ['summary', 'detailed', 'bullet_points', 'action_items'].includes(intent.responseFormat)
+          ? intent.responseFormat
+          : 'detailed',
+        confidence: Math.max(0.1, Math.min(1.0, typeof intent.confidence === 'number' ? intent.confidence : 0.5))
       }
+
+      logger.aiIntent(correlationId, {
+        query: userQuery,
+        intent: validatedIntent,
+        confidence: validatedIntent.confidence,
+        fallback: false
+      })
+
+      return validatedIntent
+
     } catch (error) {
-      console.error("Error analyzing intent:", error)
+      // Replace console.error with proper logging
+      logger.aiError(correlationId, 'Intent analysis failed', error instanceof Error ? error : new Error(String(error)), {
+        userQueryLength: userQuery.length,
+        userQueryPreview: userQuery.substring(0, 100)
+      })
 
       // Return default intent
-      return {
-        primaryIntent: 'retrieve',
-        timeReference: 'all_time',
-        responseFormat: 'detailed',
+      const fallbackIntent = {
+        primaryIntent: 'retrieve' as const,
+        timeReference: 'all_time' as const,
+        responseFormat: 'detailed' as const,
         confidence: 0.3
       }
+
+      logger.aiIntent(correlationId, {
+        query: userQuery,
+        intent: fallbackIntent,
+        fallback: true,
+        reason: 'AI request failed'
+      })
+
+      return fallbackIntent
     }
   }
 

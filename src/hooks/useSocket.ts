@@ -52,8 +52,7 @@ export function useSocket(options: UseSocketOptions = {}) {
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set())
 
   const socketRef = useRef<Socket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
+  
   // Initialize socket connection
   const connect = useCallback(() => {
     if (socketRef.current?.connected) {
@@ -63,7 +62,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     setState(prev => ({ ...prev, isConnecting: true, error: null }))
 
     try {
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "/api/socket", {
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || `http://localhost:${process.env.PORT || 3001}/api/socket`, {
         transports: ['websocket', 'polling'],
         upgrade: true,
         rememberUpgrade: true,
@@ -299,15 +298,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     }
   }, [autoConnect, connect, disconnect])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-    }
-  }, [])
-
+  
   return {
     // State
     socket: socketRef.current,

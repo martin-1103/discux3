@@ -3,7 +3,9 @@
 import { getZAIClient } from "@/lib/zai"
 import { prisma } from "@/lib/db"
 import { createAgentMessage } from "./messages"
-import { getConversationContext, getVectorStore } from "../vector-store"
+import { getConversationContext, getVectorStore, storeConversationMessage } from "../vector-store"
+import logger from "@/lib/logger"
+import { generateCorrelationId } from "@/lib/logger"
 
 /**
  * Generate AI response for an agent in a room
@@ -15,6 +17,20 @@ export async function generateAgentResponse(
   userId: string,
   userName?: string
 ) {
+  const correlationId = generateCorrelationId()
+  const startTime = Date.now()
+
+  logger.aiRequest(correlationId, {
+    endpoint: 'generateAgentResponse',
+    agentId,
+    roomId,
+    userId,
+    userName,
+    userMessageLength: userMessage.length,
+    userMessagePreview: userMessage.substring(0, 100) + (userMessage.length > 100 ? '...' : ''),
+    purpose: 'Agent response generation'
+  })
+
   try {
     // Get agent details
     const agent = await prisma.agent.findUnique({
@@ -31,23 +47,46 @@ export async function generateAgentResponse(
     })
 
     if (!agent) {
-      throw new Error("Agent not found")
+      const error = new Error("Agent not found")
+      logger.aiError(correlationId, 'Agent lookup failed', error, {
+        agentId,
+        roomId,
+        userId
+      })
+
+      return {
+        success: false,
+        error: error.message
+      }
     }
 
     // Use provided userName or fallback to a default
     const currentUser = { name: userName || "User" }
 
     // Get relevant context from vector database
+    logger.aiContext(correlationId, {
+      query: userMessage,
+      purpose: 'Get conversation context',
+      roomId
+    })
+
     const relevantContext = await getConversationContext(roomId, userMessage, 5)
+
+    logger.aiContext(correlationId, {
+      query: userMessage,
+      resultCount: relevantContext.length,
+      contextUsed: relevantContext.length > 0,
+      searchDuration: Date.now() - startTime
+    })
 
     // Build enhanced prompt with context
     let enhancedPrompt = agent.prompt
-    
+
     if (relevantContext.length > 0) {
-      const contextLines = relevantContext.map((ctx: any) => 
+      const contextLines = relevantContext.map((ctx: any) =>
         `[${new Date(ctx.timestamp).toLocaleTimeString()}] ${ctx.author_name}: ${ctx.content}`
       ).join('\n')
-      
+
       enhancedPrompt = `${agent.prompt}
 
 Recent conversation in this room:
@@ -68,6 +107,17 @@ Please respond considering who is asking and the conversation flow.`
       userId
     )
 
+    logger.aiResponse(correlationId, {
+      status: 200,
+      statusText: 'Agent response generated successfully',
+      duration: Date.now() - startTime,
+      model: response.model,
+      usage: response.usage,
+      processingTime: response.processingTime,
+      contextLength: relevantContext.length,
+      promptLength: enhancedPrompt.length
+    })
+
     // Create agent message in database
     const message = await createAgentMessage(
       roomId,
@@ -79,8 +129,34 @@ Please respond considering who is asking and the conversation flow.`
     )
 
     if (!message.success) {
-      throw new Error("Failed to create agent message")
+      const error = new Error("Failed to create agent message")
+      logger.aiError(correlationId, 'Message creation failed', error, {
+        agentId: agent.id,
+        agentName: agent.name,
+        roomId,
+        responseLength: response.content.length
+      })
+
+      return {
+        success: false,
+        error: error.message
+      }
     }
+
+    const totalProcessingTime = Date.now() - startTime
+
+    logger.aiIntent(correlationId, {
+      query: userMessage,
+      intent: {
+        agentName: agent.name,
+        agentStyle: agent.style,
+        responseGenerated: true,
+        contextUsed: relevantContext.length > 0,
+        totalProcessingTime
+      },
+      confidence: 0.9,
+      fallback: false
+    })
 
     return {
       success: true,
@@ -102,7 +178,17 @@ Please respond considering who is asking and the conversation flow.`
       }
     }
   } catch (error) {
-    console.error("Error generating agent response:", error)
+    const processingTime = Date.now() - startTime
+
+    // Replace console.error with proper logging
+    logger.aiError(correlationId, 'Agent response generation failed', error instanceof Error ? error : new Error(String(error)), {
+      agentId,
+      roomId,
+      userId,
+      userMessageLength: userMessage.length,
+      processingTime
+    })
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to generate agent response"
@@ -111,7 +197,8 @@ Please respond considering who is asking and the conversation flow.`
 }
 
 /**
- * Batch generate responses for multiple agents mentioned in a message
+ * Batch generate responses for multiple agents mentioned in a message (SEQUENTIAL)
+ * Processes agents one by one to create natural discussion flow
  */
 export async function generateBatchAgentResponses(
   agentIds: string[],
@@ -119,30 +206,112 @@ export async function generateBatchAgentResponses(
   userMessage: string,
   userId: string
 ) {
-  const responses = await Promise.allSettled(
-    agentIds.map(agentId => 
-      generateAgentResponse(agentId, roomId, userMessage, userId)
-    )
-  )
+  const correlationId = generateCorrelationId()
+  const startTime = Date.now()
 
-  const successfulResponses = responses
-    .filter((result): result is PromiseFulfilledResult<{ success: boolean; data: any }> => 
-      result.status === "fulfilled" && result.value.success
-    )
-    .map(result => result.value.data)
+  logger.aiRequest(correlationId, {
+    endpoint: 'generateBatchAgentResponses',
+    roomId,
+    userId,
+    agentCount: agentIds.length,
+    userMessageLength: userMessage.length,
+    userMessagePreview: userMessage.substring(0, 100) + (userMessage.length > 100 ? '...' : ''),
+    processingType: 'sequential',
+    purpose: 'Batch agent response generation'
+  })
 
-  const failedResponses = responses
-    .filter((result): result is PromiseRejectedResult | PromiseFulfilledResult<{ success: false; error: string }> => 
-      result.status === "rejected" || 
-      (result.status === "fulfilled" && !result.value.success)
-    )
+  const responses = []
+  const failedResponses = []
+
+  // Process agents sequentially for natural discussion flow
+  for (let i = 0; i < agentIds.length; i++) {
+    const agentId = agentIds[i]
+
+    try {
+      logger.aiRequest(`${correlationId}_agent_${i}`, {
+        endpoint: 'batchResponse',
+        agentId,
+        sequenceNumber: i + 1,
+        totalAgents: agentIds.length,
+        purpose: `Generate response for agent ${i + 1}/${agentIds.length}`
+      })
+
+      // Generate response for current agent
+      const result = await generateAgentResponse(agentId, roomId, userMessage, userId)
+
+      if (result.success) {
+        responses.push(result.data)
+
+        // Store the agent response in vector store immediately for next agents to use
+        if (result.data?.message) {
+          await storeConversationMessage(
+            roomId,
+            result.data.message.id,
+            result.data.message.content,
+            result.data.agent.name,
+            "agent"
+          )
+
+          logger.aiContext(`${correlationId}_agent_${i}`, {
+            query: userMessage,
+            purpose: 'Store agent response in vector store',
+            agentName: result.data.agent.name,
+            storedForContext: true
+          })
+        }
+      } else {
+        failedResponses.push({
+          agentId,
+          error: result.error || "Unknown error"
+        })
+
+        logger.aiError(`${correlationId}_agent_${i}`, 'Batch agent response failed', new Error(result.error || "Unknown error"), {
+          agentId,
+          sequenceNumber: i + 1,
+          totalAgents: agentIds.length
+        })
+      }
+
+      // Small delay between agents to feel more natural (optional)
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+    } catch (error) {
+      failedResponses.push({
+        agentId,
+        error: error instanceof Error ? error.message : "Unknown error"
+      })
+
+      logger.aiError(`${correlationId}_agent_${i}`, 'Unexpected error in batch processing', error instanceof Error ? error : new Error(String(error)), {
+        agentId,
+        sequenceNumber: i + 1,
+        totalAgents: agentIds.length
+      })
+    }
+  }
+
+  const totalProcessingTime = Date.now() - startTime
+
+  logger.aiIntent(correlationId, {
+    query: userMessage,
+    intent: {
+      batchProcessing: true,
+      agentCount: agentIds.length,
+      successCount: responses.length,
+      failureCount: failedResponses.length,
+      processingType: 'sequential',
+      totalProcessingTime
+    },
+    confidence: responses.length > 0 ? 0.8 : 0.2,
+    fallback: failedResponses.length === agentIds.length
+  })
 
   return {
     success: true,
     data: {
-      responses: successfulResponses,
+      responses: responses,
       failures: failedResponses.length,
-      total: agentIds.length
+      total: agentIds.length,
+      processingType: "sequential" // Indicate sequential processing
     }
   }
 }
@@ -171,6 +340,14 @@ export async function testAIIntegration() {
  * Get AI usage statistics
  */
 export async function getAIUsageStats(userId: string) {
+  const correlationId = generateCorrelationId()
+
+  logger.aiRequest(correlationId, {
+    endpoint: 'getAIUsageStats',
+    userId,
+    purpose: 'Get AI usage statistics'
+  })
+
   try {
     // Get total messages sent by user
     const totalMessages = await prisma.message.count({
@@ -213,6 +390,17 @@ export async function getAIUsageStats(userId: string) {
       take: 10
     })
 
+    logger.aiResponse(correlationId, {
+      status: 200,
+      statusText: 'Usage statistics retrieved successfully',
+      stats: {
+        totalMessages,
+        totalAIResponses,
+        agentCount: agentUsage.length,
+        aiResponseRate: totalMessages > 0 ? (totalAIResponses / totalMessages) * 100 : 0
+      }
+    })
+
     return {
       success: true,
       data: {
@@ -223,7 +411,10 @@ export async function getAIUsageStats(userId: string) {
       }
     }
   } catch (error) {
-    console.error("Error getting AI usage stats:", error)
+    logger.aiError(correlationId, 'Failed to get AI usage statistics', error instanceof Error ? error : new Error(String(error)), {
+      userId
+    })
+
     return {
       success: false,
       error: "Failed to get AI usage statistics"
