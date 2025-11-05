@@ -2,16 +2,38 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { io, Socket } from "socket.io-client"
+
+// Dynamic import untuk socket.io-client
+let io: any = null
+let socketClientLoaded = false
+
+// Fungsi untuk load socket.io-client secara dinamis
+async function loadSocketClient() {
+  if (socketClientLoaded && io) return io
+
+  try {
+    console.log('[Socket] Loading socket.io-client module...')
+    const socketModule = await import('socket.io-client')
+    io = socketModule.io
+    socketClientLoaded = true
+    console.log('[Socket] socket.io-client loaded successfully:', typeof io)
+    return io
+  } catch (error) {
+    console.error('[Socket] Failed to load socket.io-client:', error)
+    throw error
+  }
+}
+
 import {
   SocketMessage,
   TypingIndicator,
   PresenceStatus,
-  DiscussionUpdate
+  DiscussionUpdate,
+  AgentProgressUpdate
 } from "@/lib/services/socket-service"
 
 // Global socket instance to prevent multiple connections
-let globalSocket: Socket | null = null
+let globalSocket: any = null
 let globalSocketUserId: string | null = null
 
 interface UseSocketOptions {
@@ -62,24 +84,34 @@ export function useSocket(options: UseSocketOptions = {}) {
   const [typingUsers, setTypingUsers] = useState<TypingUsers>({})
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set())
 
-  const socketRef = useRef<Socket | null>(null)
-  
+  const socketRef = useRef<any>(null)
+
   // Initialize socket connection
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     // Use provided props or fallback to session or hardcoded user ID for development
     const userId = propUserId || session?.user?.id || 'cmhk9lqk0000114aj3q0q8p1w'
     const userName = propUserName || session?.user?.name || 'pile'
 
+    // Load socket.io-client dynamically
+    try {
+      const io = await loadSocketClient()
+      if (!io) {
+        setState(prev => ({ ...prev, isConnected: false, isConnecting: false, error: 'Socket.io client not available' }))
+        return
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, isConnected: false, isConnecting: false, error: 'Failed to load socket.io-client' }))
+      return
+    }
+
     // Check if we already have a socket for this user
     if (globalSocket && globalSocketUserId === userId) {
       if (globalSocket.connected) {
-        console.log('[Socket] Reusing existing socket connection')
-        socketRef.current = globalSocket
+          socketRef.current = globalSocket
         setState(prev => ({ ...prev, isConnected: true, isConnecting: false, error: null }))
         return
       } else {
-        console.log('[Socket] Reconnecting existing socket')
-        globalSocket.connect()
+            globalSocket.connect()
         socketRef.current = globalSocket
         setState(prev => ({ ...prev, isConnecting: true, error: null }))
         return
@@ -88,28 +120,29 @@ export function useSocket(options: UseSocketOptions = {}) {
 
     // Clean up existing socket if user changed
     if (globalSocket && globalSocketUserId !== userId) {
-      console.log('[Socket] User changed, cleaning up previous socket')
-      globalSocket.disconnect()
+        globalSocket.disconnect()
       globalSocket = null
       globalSocketUserId = null
     }
 
     // Prevent multiple socket instances for the same user
     if (socketRef.current && globalSocketUserId === userId) {
-      console.log('[Socket] Socket already exists for this user, skipping connection')
-      return
+          return
     }
 
-    console.log('[Socket] Creating new socket connection...')
-    setState(prev => ({ ...prev, isConnecting: true, error: null }))
+      setState(prev => ({ ...prev, isConnecting: true, error: null }))
 
     try {
+      // Load socket.io-client if not already loaded
+      const io = await loadSocketClient()
+      if (!io) {
+        throw new Error('Socket.io client not available')
+      }
+
       const authData = {
         userId,
         userName
       }
-
-      console.log('[Socket] Using auth data:', authData)
 
       const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || `http://localhost:${process.env.PORT || 3000}`, {
         transports: ['websocket', 'polling'],
@@ -124,13 +157,12 @@ export function useSocket(options: UseSocketOptions = {}) {
 
       // Setup event listeners
       socket.on('connect', () => {
-        console.log("[Socket] Connected to server")
+        console.log('[Socket] Connected to server with socket ID:', socket.id)
         setState(prev => ({ ...prev, isConnected: true, isConnecting: false, error: null }))
       })
 
       socket.on('disconnect', (reason) => {
-        console.log("[Socket] Disconnected:", reason)
-        setState(prev => ({ ...prev, isConnected: false, isConnecting: false }))
+            setState(prev => ({ ...prev, isConnected: false, isConnecting: false }))
 
         // Clear online users and typing indicators
         setOnlineUsers({})
@@ -150,6 +182,7 @@ export function useSocket(options: UseSocketOptions = {}) {
 
       // Real-time events
       socket.on('new_message', (message: SocketMessage) => {
+        console.log('[Socket] Received new_message event:', message)
         // Handle new message - parent component can listen to this
         window.dispatchEvent(new CustomEvent('socket:new_message', { detail: message }))
       })
@@ -223,6 +256,11 @@ export function useSocket(options: UseSocketOptions = {}) {
         window.dispatchEvent(new CustomEvent('socket:discussion_update', { detail: update }))
       })
 
+      socket.on('agent_progress', (progress: AgentProgressUpdate) => {
+        // Handle agent progress updates
+        window.dispatchEvent(new CustomEvent('socket:agent_progress', { detail: progress }))
+      })
+
       socketRef.current = socket
       globalSocket = socket
       globalSocketUserId = userId
@@ -239,14 +277,13 @@ export function useSocket(options: UseSocketOptions = {}) {
         error: error instanceof Error ? error.message : 'Unknown error'
       }))
     }
-  }, [autoConnect, reconnection, reconnectionAttempts, reconnectionDelay, joinedRooms, session, propUserId, propUserName])
+  }, [reconnection, reconnectionAttempts, reconnectionDelay, session, propUserId, propUserName, autoConnect, joinedRooms])
 
   // Disconnect socket
   const disconnect = useCallback(() => {
     // Only disconnect if we're the ones who created it
     if (socketRef.current === globalSocket) {
-      console.log('[Socket] Disconnecting socket')
-      socketRef.current?.disconnect()
+          socketRef.current?.disconnect()
       socketRef.current = null
       globalSocket = null
       globalSocketUserId = null
@@ -258,8 +295,7 @@ export function useSocket(options: UseSocketOptions = {}) {
   // Join room
   const joinRoom = useCallback((roomId: string) => {
     if (!socketRef.current?.connected) {
-      console.warn("[Socket] Cannot join room - not connected")
-      return
+          return
     }
 
     socketRef.current.emit('join_room', { roomId })
@@ -328,8 +364,7 @@ export function useSocket(options: UseSocketOptions = {}) {
   // Send message
   const sendMessage = useCallback((message: SocketMessage) => {
     if (!socketRef.current?.connected) {
-      console.warn("[Socket] Cannot send message - not connected")
-      return
+          return
     }
 
     socketRef.current.emit('message', message)
@@ -338,8 +373,7 @@ export function useSocket(options: UseSocketOptions = {}) {
   // Send discussion update
   const sendDiscussionUpdate = useCallback((update: DiscussionUpdate) => {
     if (!socketRef.current?.connected) {
-      console.warn("[Socket] Cannot send discussion update - not connected")
-      return
+            return
     }
 
     socketRef.current.emit('discussion_update', update)
@@ -348,13 +382,16 @@ export function useSocket(options: UseSocketOptions = {}) {
   // Auto-connect on mount
   useEffect(() => {
     if (autoConnect) {
-      connect()
+      connect().catch(console.error)
     }
 
     return () => {
-      disconnect()
+      // Don't disconnect on unmount to keep global socket alive
+      // Just clear the local reference
+      socketRef.current = null
     }
-  }, [autoConnect, connect, disconnect])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect])
 
   
   return {

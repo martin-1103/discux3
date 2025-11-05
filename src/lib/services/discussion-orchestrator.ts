@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db"
 import { getZAIClient } from "@/lib/zai"
 import { createAgentMessage } from "@/lib/actions/messages"
 import { getConversationContext } from "@/lib/vector-store"
-import { getSocketService, DiscussionUpdate } from "./socket-service"
+import { getSocketService, DiscussionUpdate, AgentProgressUpdate } from "./socket-service"
 
 // Truth Teller Enhancement - simple enhancement for all agents
 const TRUTH_TELLER_ENHANCEMENT = `
@@ -209,7 +209,7 @@ async function continueDiscussion(
   for (let i = currentTurn; i < Math.min(turnOrder.length, currentTurn + 3); i++) {
     const agentId = turnOrder[i]
 
-    // Build context for this agent
+      // Build context for this agent
     const context = await buildAgentContext(
       discussion,
       agentId,
@@ -217,6 +217,28 @@ async function continueDiscussion(
       conversationHistory,
       userPatterns
     )
+
+    // Get agent information for broadcasting
+    const agent = await prisma.agent.findUnique({
+      where: { id: agentId },
+      select: { name: true, emoji: true }
+    })
+
+    // Broadcast agent starting event
+    const socketService = getSocketService()
+    if (socketService) {
+      const startingProgress: AgentProgressUpdate = {
+        type: 'agent_starting',
+        discussionId: discussion.id,
+        roomId: discussion.roomId,
+        agentId,
+        agentName: agent?.name || 'Agent',
+        agentEmoji: agent?.emoji || '🤖',
+        turnOrder: i,
+        totalTurns: turnOrder.length
+      }
+      socketService.broadcastAgentProgress(discussion.roomId, startingProgress)
+    }
 
     // Generate agent response
     const response = await generateContextualAgentResponse(
@@ -250,8 +272,21 @@ async function continueDiscussion(
         data: { currentTurn: i + 1 }
       })
 
-      // Broadcast agent response via Socket.io
-      const socketService = getSocketService()
+      // Broadcast agent completion event
+      const completionProgress: AgentProgressUpdate = {
+        type: 'agent_complete',
+        discussionId: discussion.id,
+        roomId: discussion.roomId,
+        agentId,
+        agentName: agent?.name || 'Agent',
+        agentEmoji: agent?.emoji || '🤖',
+        turnOrder: i,
+        totalTurns: turnOrder.length,
+        processingTime: response.data.response?.processingTime
+      }
+      socketService.broadcastAgentProgress(discussion.roomId, completionProgress)
+
+      // Broadcast discussion update via Socket.io
       if (socketService) {
         const update: DiscussionUpdate = {
           discussionId: discussion.id,
@@ -269,6 +304,22 @@ async function continueDiscussion(
       await delay(1000 + Math.random() * 2000)
     } else {
       console.error(`Failed to generate response for agent ${agentId}:`, response.error)
+
+      // Broadcast agent error event
+      const errorProgress: AgentProgressUpdate = {
+        type: 'agent_error',
+        discussionId: discussion.id,
+        roomId: discussion.roomId,
+        agentId,
+        agentName: agent?.name || 'Agent',
+        agentEmoji: agent?.emoji || '🤖',
+        turnOrder: i,
+        totalTurns: turnOrder.length,
+        errorMessage: response.error || "Unknown error"
+      }
+      if (socketService) {
+        socketService.broadcastAgentProgress(discussion.roomId, errorProgress)
+      }
     }
   }
 

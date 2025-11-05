@@ -48,6 +48,15 @@ export async function getMessages(roomId: string, userId: string, limit: number 
             image: true
           }
         },
+        agent: {
+          select: {
+            id: true,
+            name: true,
+            emoji: true,
+            color: true,
+            style: true
+          }
+        },
         mentions: {
           include: {
             agent: {
@@ -199,8 +208,7 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
 
     // Trigger agent responses asynchronously (server-side)
     if (agentMentions.length > 0) {
-      console.log(`[Messages] Triggering agent responses for ${agentMentions.length} agents`)
-
+      
       // Check if this should be a discussion (multiple agents or explicit discussion command)
       const isDiscussionMode = agentMentions.length >= 2 ||
         validatedData.content.toLowerCase().includes('discuss') ||
@@ -209,8 +217,7 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
 
       if (isDiscussionMode && agentMentions.length >= 2) {
         // Start a multi-agent discussion
-        console.log(`[Messages] Starting multi-agent discussion with ${agentMentions.length} agents`)
-
+        
         // Determine intensity based on content and agent types
         const intensity = determineDiscussionIntensity(validatedData.content, agentMentions, room.agents)
 
@@ -225,8 +232,7 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
           )
 
           if (discussionResult.success) {
-            console.log(`[Messages] Discussion created: ${discussionResult.data.id}`)
-
+          
             // Execute discussion asynchronously
             const { executeDiscussion } = await import("@/lib/services/discussion-orchestrator")
             executeDiscussion(
@@ -284,24 +290,25 @@ export async function createAgentMessage(
     // Prepend agent info to content for parsing in the frontend
     const contentWithAgentInfo = `[AGENT:${agentId}:${agent.name}:${agent.emoji}:${agent.color}:${agent.style}]\n${content}`
 
-    // Create message as agent (using agent's creator as sender for now)
+    // Create message as agent
     const message = await prisma.message.create({
       data: {
         roomId,
         content: contentWithAgentInfo,
         type: "AGENT",
-        senderId: agent.createdBy,
+        agentId: agentId,
         processingTime,
         agentConfidence,
         contextLength,
       },
       include: {
-        sender: {
+        agent: {
           select: {
             id: true,
             name: true,
-            email: true,
-            image: true
+            emoji: true,
+            color: true,
+            style: true
           }
         },
         mentions: {
@@ -342,6 +349,27 @@ export async function createAgentMessage(
     }
 
     revalidatePath(`/rooms/${roomId}/chat`)
+
+    // Emit WebSocket event for real-time updates
+    try {
+      const { getSocketService } = await import("@/lib/services/socket-service")
+      const socketService = getSocketService()
+
+      if (socketService) {
+        // Send the actual message object directly, not wrapped in 'data'
+        const socketMessage = {
+          ...serializedMessage,
+          timestamp: serializedMessage.timestamp || new Date()
+        }
+
+        socketService.broadcastMessage(roomId, socketMessage)
+        console.log(`[Messages] WebSocket event sent for agent message: ${agent.name}`)
+      }
+    } catch (socketError) {
+      console.error("[Messages] Failed to send WebSocket event for agent message:", socketError)
+      // Don't fail the operation if WebSocket fails
+    }
+
     return { success: true, data: serializedMessage }
   } catch (error) {
     console.error("Error creating agent message:", error)
@@ -389,28 +417,23 @@ export async function deleteMessage(messageId: string, userId: string) {
 function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: string, name: string } }>): string[] {
   const mentions: string[] = []
 
-  console.log(`[Messages] Extracting mentions from content: "${content}"`)
-  console.log(`[Messages] Available room agents:`, roomAgents.map(ra => ({ id: ra.agent.id, name: ra.agent.name })))
-
+    
   // Find @mentions in the content (supports emojis and spaces)
   const mentionRegex = /@([^\s]+)/g
   let match
 
   while ((match = mentionRegex.exec(content)) !== null) {
     const mentionName = match[1].toLowerCase()
-    console.log(`[Messages] Found mention: @${mentionName}`)
-
+    
     // Check for @all mention
     if (mentionName === 'all') {
       // Add all agents in the room
       const allAgentIds = roomAgents.map(roomAgent => roomAgent.agent.id)
-      console.log(`[Messages] @all mention - adding all agent IDs:`, allAgentIds)
-      mentions.push(...allAgentIds)
+            mentions.push(...allAgentIds)
     } else {
       // Remove emojis and extra spaces from mention for matching
       const cleanMentionName = mentionName.replace(/[\p{Emoji_Presentation}\p{Emoji}\u200D]+/gu, '').trim()
-      console.log(`[Messages] Cleaned mention name: "${cleanMentionName}"`)
-
+      
       // Find matching agent in room (try both original mention and cleaned version)
       const agent = roomAgents.find(roomAgent =>
         roomAgent.agent.name.toLowerCase() === cleanMentionName ||
@@ -418,18 +441,14 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
       )
 
       if (agent) {
-        console.log(`[Messages] Found matching agent: ${agent.name} (${agent.agent.id})`)
-        mentions.push(agent.agent.id)
+                mentions.push(agent.agent.id)
       } else {
-        console.log(`[Messages] No agent found with name: "${mentionName}" or "${cleanMentionName}"`)
-        console.log(`[Messages] Available agents:`, roomAgents.map(ra => ra.agent.name.toLowerCase()))
-      }
+              }
     }
   }
 
   const uniqueMentions = [...new Set(mentions)]
-  console.log(`[Messages] Final extracted agent IDs:`, uniqueMentions)
-  return uniqueMentions
+    return uniqueMentions
 }
 
 /**
@@ -440,8 +459,7 @@ function triggerIndividualAgentResponses(
   validatedData: CreateMessageInput,
   message: any
 ) {
-  console.log(`[Messages] Triggering individual agent responses for ${agentMentions.length} agents`)
-
+  
   // Generate responses for each mentioned agent
   agentMentions.forEach(async (agentId) => {
     try {
@@ -452,8 +470,7 @@ function triggerIndividualAgentResponses(
         validatedData.senderId,
         message.sender?.name || "User"
       )
-      console.log(`[Messages] Agent response generated for agent: ${agentId}`)
-    } catch (error) {
+          } catch (error) {
       console.error(`[Messages] Failed to generate response for agent ${agentId}:`, error)
     }
   })

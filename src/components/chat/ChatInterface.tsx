@@ -138,6 +138,7 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     const handleNewMessage = (event: CustomEvent) => {
       const message = event.detail
       console.log(`[ChatInterface] Received new message via WebSocket:`, message)
+      console.log(`[ChatInterface] Message type:`, message.type, `Message id:`, message.id)
 
       setMessages(prev => {
         // Check if message already exists to avoid duplicates
@@ -188,10 +189,72 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       }
     }
 
+    const handleAgentProgress = (event: CustomEvent) => {
+      const progress = event.detail
+      console.log(`[ChatInterface] Agent progress:`, progress)
+
+      // Update discussion state based on agent progress events
+      if (progress.type === 'agent_starting') {
+        setDiscussionState(prev => ({
+          ...prev,
+          currentAgent: progress.agentName,
+          isActive: true,
+          totalAgents: progress.totalTurns,
+          agentOrder: prev.agentOrder.length > 0 ? prev.agentOrder : Array.from({ length: progress.totalTurns }, (_, i) => `agent_${i}`)
+        }))
+
+        // Remove from typing when actually starting
+        setIsTyping(prev => prev.filter(id => id !== progress.agentId))
+      } else if (progress.type === 'agent_responding') {
+        setDiscussionState(prev => ({
+          ...prev,
+          currentAgent: progress.agentName
+        }))
+      } else if (progress.type === 'agent_complete') {
+        setDiscussionState(prev => ({
+          ...prev,
+          completedAgents: [...prev.completedAgents, progress.agentId],
+          currentAgent: null
+        }))
+
+        // Remove from typing and load new messages
+        setIsTyping(prev => prev.filter(id => id !== progress.agentId))
+
+        // Load updated messages to get the agent response
+        loadMessages()
+      } else if (progress.type === 'agent_error') {
+        console.error(`[ChatInterface] Agent ${progress.agentName} encountered an error:`, progress.errorMessage)
+
+        // Remove from typing and mark as completed (with error)
+        setIsTyping(prev => prev.filter(id => id !== progress.agentId))
+        setDiscussionState(prev => ({
+          ...prev,
+          completedAgents: [...prev.completedAgents, progress.agentId],
+          currentAgent: null
+        }))
+      }
+
+      // Check if discussion is complete
+      if (progress.turnOrder === progress.totalTurns - 1 &&
+          (progress.type === 'agent_complete' || progress.type === 'agent_error')) {
+        // Discussion completed after last agent
+        setTimeout(() => {
+          setDiscussionState({
+            isActive: false,
+            currentAgent: null,
+            completedAgents: [],
+            totalAgents: 0,
+            agentOrder: []
+          })
+        }, 2000) // Brief pause to show completion
+      }
+    }
+
     // Add event listeners
     window.addEventListener('socket:new_message', handleNewMessage as EventListener)
     window.addEventListener('socket:agent_typing', handleAgentTyping as EventListener)
     window.addEventListener('socket:discussion_update', handleDiscussionUpdate as EventListener)
+    window.addEventListener('socket:agent_progress', handleAgentProgress as EventListener)
 
     // Load initial messages once
     loadMessages()
@@ -200,6 +263,7 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       window.removeEventListener('socket:new_message', handleNewMessage as EventListener)
       window.removeEventListener('socket:agent_typing', handleAgentTyping as EventListener)
       window.removeEventListener('socket:discussion_update', handleDiscussionUpdate as EventListener)
+      window.removeEventListener('socket:agent_progress', handleAgentProgress as EventListener)
     }
   }, [loadMessages, roomId])
 
@@ -246,7 +310,7 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
 
     console.log(`[ChatInterface] Starting sequential discussion with agents: ${mentionedAgentNames.join(', ')}`)
 
-    // Initialize discussion state
+    // Initialize discussion state - will be updated by real-time events
     setDiscussionState({
       isActive: true,
       currentAgent: null,
@@ -255,11 +319,11 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       agentOrder: mentionedAgentIds
     })
 
-    // Set initial typing indicators
+    // Set initial typing indicators for all mentioned agents
     setIsTyping(mentionedAgentIds)
 
+    // Trigger the batch generation - responses will come via real-time events
     try {
-      // Generate batch responses (now sequential)
       const response = await generateBatchAgentResponses(
         mentionedAgentIds,
         roomId,
@@ -268,12 +332,11 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       )
 
       if (response.success) {
-        console.log(`[ChatInterface] Discussion completed. ${response.data.responses.length} agents responded.`)
+        console.log(`[ChatInterface] Discussion initiated. Real-time updates will follow via WebSocket.`)
+      } else {
+        console.error(`[ChatInterface] Failed to initiate discussion:`, response.error)
 
-        // Load updated messages to get agent responses
-        await loadMessages()
-
-        // Clear discussion state
+        // Reset state on failure
         setDiscussionState({
           isActive: false,
           currentAgent: null,
@@ -281,8 +344,6 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
           totalAgents: 0,
           agentOrder: []
         })
-
-        // Clear typing indicators
         setIsTyping([])
       }
     } catch (error) {
@@ -410,55 +471,86 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     const progress = (discussionState.completedAgents.length / discussionState.totalAgents) * 100
 
     return (
-      <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-blue-900">
-            Discussion in Progress
-          </span>
-          <span className="text-sm text-blue-700">
-            {discussionState.completedAgents.length} of {discussionState.totalAgents} agents responded
+      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="text-sm font-semibold text-blue-900">
+              Live Discussion in Progress
+            </span>
+          </div>
+          <span className="text-sm font-medium text-blue-700">
+            {discussionState.completedAgents.length}/{discussionState.totalAgents} agents
           </span>
         </div>
 
-        <Progress value={progress} className="h-2 mb-2" />
+        <Progress value={progress} className="h-3 mb-3" />
 
         {discussionState.currentAgent && (
-          <p className="text-xs text-blue-600">
-            Currently responding: {discussionState.currentAgent}
-          </p>
+          <div className="flex items-center gap-2 mb-3 p-2 bg-blue-100 rounded-md">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            <p className="text-sm font-medium text-blue-800">
+              Currently responding: {discussionState.currentAgent}
+            </p>
+          </div>
         )}
 
-        {/* Agent Status List */}
-        {room.agents
-          .filter(agent => discussionState.agentOrder.includes(agent.agent.id))
-          .map((roomAgent) => {
-            const isCompleted = discussionState.completedAgents.includes(roomAgent.agent.id)
-            const isCurrent = discussionState.currentAgent === roomAgent.agent.name
-            const isPending = !isCompleted && !isCurrent
+        {/* Agent Status Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {room.agents
+            .filter(agent => discussionState.agentOrder.includes(agent.agent.id))
+            .map((roomAgent) => {
+              const isCompleted = discussionState.completedAgents.includes(roomAgent.agent.id)
+              const isCurrent = discussionState.currentAgent === roomAgent.agent.name
+              const isPending = !isCompleted && !isCurrent
 
-            return (
-              <div key={roomAgent.agent.id} className="flex items-center gap-2 mt-2">
-                <span className="text-sm">{roomAgent.agent.emoji}</span>
-                <span className="text-sm font-medium">{roomAgent.agent.name}</span>
-                <Badge
-                  variant={
+              return (
+                <div
+                  key={roomAgent.agent.id}
+                  className={`flex items-center gap-2 p-2 rounded-md border transition-all duration-300 ${
                     isCompleted
-                      ? "default"
+                      ? 'bg-green-50 border-green-200'
                       : isCurrent
-                      ? "secondary"
-                      : "outline"
-                  }
-                  className="text-xs"
+                      ? 'bg-blue-100 border-blue-300 animate-pulse'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
                 >
-                  {isCompleted
-                    ? "✅ Done"
-                    : isCurrent
-                    ? "🔄 Responding"
-                    : "⏳ Pending"}
-                </Badge>
-              </div>
-            )
-          })}
+                  <span className="text-lg">{roomAgent.agent.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{roomAgent.agent.name}</p>
+                    <Badge
+                      variant={
+                        isCompleted
+                          ? "default"
+                          : isCurrent
+                          ? "secondary"
+                          : "outline"
+                      }
+                      className={`text-xs ${
+                        isCompleted
+                          ? 'bg-green-100 text-green-800 border-green-200'
+                          : isCurrent
+                          ? 'bg-blue-100 text-blue-800 border-blue-200'
+                          : ''
+                      }`}
+                    >
+                      {isCompleted
+                        ? "✅ Complete"
+                        : isCurrent
+                        ? "🔄 Responding..."
+                        : "⏳ Waiting"}
+                    </Badge>
+                  </div>
+                </div>
+              )
+            })}
+        </div>
+
+        <div className="mt-3 text-xs text-blue-600 text-center">
+          {progress === 100
+            ? "🎉 Discussion complete! Messages are appearing above."
+            : `⏳ ${Math.round(progress)}% complete - ${discussionState.totalAgents - discussionState.completedAgents.length} agents remaining`}
+        </div>
       </div>
     )
   }

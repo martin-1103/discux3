@@ -41,6 +41,19 @@ export interface DiscussionUpdate {
   intensity: string
 }
 
+export interface AgentProgressUpdate {
+  type: 'agent_starting' | 'agent_responding' | 'agent_complete' | 'agent_error'
+  discussionId: string
+  roomId: string
+  agentId: string
+  agentName: string
+  agentEmoji: string
+  turnOrder: number
+  totalTurns: number
+  processingTime?: number
+  errorMessage?: string
+}
+
 /**
  * Socket.io Service for Real-time Communication
  */
@@ -61,6 +74,15 @@ export class SocketService {
       transports: ['websocket', 'polling']
     })
 
+    console.log('[Socket] Socket.io server created with config:', {
+      transports: ['websocket', 'polling'],
+      cors: {
+        origin: process.env.NODE_ENV === 'production'
+          ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ["https://discux3.com"])
+          : ["http://localhost:3000"]
+      }
+    })
+
     this.setupMiddleware()
     this.setupEventHandlers()
   }
@@ -74,20 +96,15 @@ export class SocketService {
         // Extract user data from handshake auth sent by client
         const { userId, userName } = socket.handshake.auth
 
-        console.log(`[Socket Debug] Handshake auth:`, socket.handshake.auth)
-        console.log(`[Socket Debug] Received userId:`, userId)
-        console.log(`[Socket Debug] Received userName:`, userName)
-
+  
         if (userId && userId !== 'anonymous') {
           socket.data.userId = userId
           socket.data.userName = userName || 'Unknown User'
-          console.log(`[Socket] ✓ Authenticated user connected: ${socket.data.userName} (${socket.data.userId})`)
-        } else {
+          } else {
           // Fallback for development - allow anonymous but with consistent ID
           socket.data.userId = 'dev-user'
           socket.data.userName = 'Development User'
-          console.log(`[Socket] ⚠ Development user connected: ${socket.data.userName}`)
-        }
+          }
 
         next()
       } catch (error) {
@@ -95,8 +112,7 @@ export class SocketService {
         // Fallback to development user
         socket.data.userId = 'dev-user'
         socket.data.userName = 'Development User'
-        console.log(`[Socket] ⚠ Fallback to development user due to error`)
-        next()
+          next()
       }
     })
   }
@@ -106,10 +122,13 @@ export class SocketService {
    */
   private setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
+      console.log('[Socket] New connection attempt:', socket.id)
+      console.log('[Socket] Transport:', socket.conn.transport.name)
+
       const userId = socket.data.userId
       const userName = socket.data.userName
 
-      console.log(`[Socket] User connected: ${userName} (${userId})`)
+      console.log('[Socket] User authenticated:', userId, userName)
 
       // Store user socket mapping
       this.userSockets.set(userId, socket.id)
@@ -142,6 +161,11 @@ export class SocketService {
       // Handle discussion updates
       socket.on('discussion_update', (data: DiscussionUpdate) => {
         this.handleDiscussionUpdate(socket, data)
+      })
+
+      // Handle agent progress updates
+      socket.on('agent_progress', (data: AgentProgressUpdate) => {
+        this.handleAgentProgress(socket, data)
       })
 
       // Handle disconnect
@@ -190,8 +214,7 @@ export class SocketService {
 
       socket.emit('online_users', onlineUsersList)
 
-      console.log(`[Socket] User ${userName} joined room ${roomId}`)
-    } catch (error) {
+      } catch (error) {
       console.error('[Socket] Error handling join_room:', error)
     }
   }
@@ -237,8 +260,7 @@ export class SocketService {
       socket.to(roomId).emit('user_left', presence)
       socket.to(roomId).emit('presence_update', presence)
 
-      console.log(`[Socket] User ${userName} left room ${roomId}`)
-    } catch (error) {
+      } catch (error) {
       console.error('[Socket] Error handling leave_room:', error)
     }
   }
@@ -301,8 +323,7 @@ export class SocketService {
       // Broadcast to room
       socket.to(roomId).emit('presence_update', presence)
 
-      console.log(`[Socket] User ${userName} presence updated to ${status} in room ${roomId}`)
-    } catch (error) {
+        } catch (error) {
       console.error('[Socket] Error handling presence:', error)
     }
   }
@@ -317,8 +338,7 @@ export class SocketService {
       // Broadcast message to room (excluding sender)
       socket.to(roomId).emit('new_message', data)
 
-      console.log(`[Socket] Message broadcasted to room ${roomId}`)
-    } catch (error) {
+          } catch (error) {
       console.error('[Socket] Error handling message:', error)
     }
   }
@@ -340,9 +360,26 @@ export class SocketService {
         timestamp: new Date()
       })
 
-      console.log(`[Socket] Discussion ${discussionId} update: ${status} in room ${roomId}`)
-    } catch (error) {
+          } catch (error) {
       console.error('[Socket] Error handling discussion_update:', error)
+    }
+  }
+
+  /**
+   * Handle agent progress updates
+   */
+  private handleAgentProgress(socket: any, data: AgentProgressUpdate): void {
+    try {
+      const { roomId } = data
+
+      // Broadcast agent progress to room (excluding sender)
+      socket.to(roomId).emit('agent_progress', {
+        ...data,
+        timestamp: new Date()
+      })
+
+    } catch (error) {
+      console.error('[Socket] Error handling agent_progress:', error)
     }
   }
 
@@ -399,8 +436,7 @@ export class SocketService {
         }
       })
 
-      console.log(`[Socket] User disconnected: ${userName} (${userId})`)
-    } catch (error) {
+        } catch (error) {
       console.error('[Socket] Error handling disconnect:', error)
     }
   }
@@ -424,6 +460,16 @@ export class SocketService {
    */
   public broadcastDiscussionUpdate(roomId: string, update: DiscussionUpdate): void {
     this.io.to(roomId).emit('discussion_update', update)
+  }
+
+  /**
+   * Broadcast agent progress update
+   */
+  public broadcastAgentProgress(roomId: string, update: AgentProgressUpdate): void {
+    this.io.to(roomId).emit('agent_progress', {
+      ...update,
+      timestamp: new Date()
+    })
   }
 
   /**
