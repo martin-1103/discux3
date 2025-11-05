@@ -93,7 +93,7 @@ model Agent {
   prompt     String     @db.Text
   emoji      String     @default("🤖") @db.VarChar(2)
   color      String     @default("#3B82F6") @db.VarChar(7)
-  style      AgentStyle @default(PROFESSIONAL)
+  style      AgentStyle @default(TRUTH_TELLER)
   isPublic   Boolean    @default(false) @map("is_public")
   usageCount Int        @default(0) @map("usage_count")
   createdAt  DateTime   @default(now()) @map("created_at")
@@ -105,6 +105,7 @@ model Agent {
   roomAgents       RoomAgent[]
   mentions         MessageMention[]
   discussionResponses DiscussionResponse[]
+  messages         Message[]
 
   @@index([createdBy])
   @@index([style])
@@ -185,20 +186,23 @@ model Message {
   roomId           String      @map("room_id")
   content          String      @db.Text
   type             MessageType
-  senderId         String      @map("sender_id")
+  senderId         String?     @map("sender_id") // Optional for agent messages
+  agentId          String?     @map("agent_id")  // New field for agent messages
   processingTime   Decimal?    @map("processing_time") @db.Decimal(10, 3)
   agentConfidence  Decimal?    @map("agent_confidence") @db.Decimal(3, 2)
   contextLength    Int?        @map("context_length")
   timestamp        DateTime    @default(now())
 
   room       Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender     User                  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  sender     User?                 @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  agent      Agent?                @relation(fields: [agentId], references: [id], onDelete: Cascade)
   mentions   MessageMention[]
   discussionResponses DiscussionResponse[]
   discussions Discussion[]
 
   @@index([roomId, timestamp])
   @@index([senderId])
+  @@index([agentId])
   @@index([type])
   @@fulltext([content])
   @@map("messages")
@@ -285,15 +289,6 @@ model RoomInvitation {
 // ============================================
 
 enum AgentStyle {
-  PROFESSIONAL
-  DIRECT
-  FRIENDLY
-  CREATIVE
-  ANALYTICAL
-  BRUTAL_MENTOR
-  STRATEGIC_CHALLENGER
-  GROWTH_ACCELERATOR
-  EXECUTION_DRILL_SERGEANT
   TRUTH_TELLER
 }
 

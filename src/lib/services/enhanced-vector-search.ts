@@ -2,6 +2,7 @@ import { getVectorStore } from "@/lib/vector-store"
 import { getZAIClient } from "@/lib/zai"
 import { prisma } from "@/lib/db"
 import logger from "@/lib/logger"
+import { analyzeUserIntentWithContext } from "./conversation-context"
 
 interface QueryIntent {
   primaryIntent: 'retrieve' | 'summarize' | 'analyze' | 'compare' | 'find_decisions'
@@ -59,10 +60,10 @@ export class EnhancedVectorSearch {
   /**
    * Analyze user query and generate enhanced search parameters
    */
-  async analyzeQuery(userQuery: string, roomId: string): Promise<EnhancedQuery> {
+  async analyzeQuery(userQuery: string, roomId: string, userId: string): Promise<EnhancedQuery> {
     try {
-      // Use AI to analyze user intent
-      const intentAnalysis = await this.analyzeUserIntent(userQuery)
+      // Use conversation-aware intent analysis
+      const intentAnalysis = await this.analyzeUserIntentWithContext(userQuery, roomId, userId)
 
       // Generate enhanced query based on intent
       const enhancedQuery = await this.generateEnhancedQuery(userQuery, intentAnalysis)
@@ -335,6 +336,43 @@ Example response format:
       })
 
       return fallbackIntent
+    }
+  }
+
+  /**
+   * Analyze user intent with conversation context
+   */
+  private async analyzeUserIntentWithContext(userQuery: string, roomId: string, userId: string): Promise<QueryIntent> {
+    try {
+      // Get conversation-aware intent analysis
+      const enhancedIntent = await analyzeUserIntentWithContext(roomId, userId, userQuery)
+
+      // Convert enhanced intent to QueryIntent format
+      const intentMapping: Record<string, 'retrieve' | 'summarize' | 'analyze' | 'compare' | 'find_decisions'> = {
+        'strategic_advice': 'analyze',
+        'opinion_request': 'retrieve',
+        'problem_solution': 'analyze',
+        'help_request': 'retrieve',
+        'decision_support': 'compare',
+        'information_request': 'retrieve',
+        'general_discussion': 'retrieve'
+      }
+
+      const primaryIntent = intentMapping[enhancedIntent.primary] || 'retrieve'
+
+      return {
+        primaryIntent,
+        timeReference: 'recent', // Default to recent for conversation context
+        topicFocus: enhancedIntent.context.split(' ').slice(0, 3).join(' '),
+        participantFocus: [],
+        responseFormat: 'detailed',
+        confidence: enhancedIntent.confidence
+      }
+
+    } catch (error) {
+      // Fallback to original intent analysis
+      logger.aiError('context-intent', 'Conversation context analysis failed', error instanceof Error ? error : new Error(String(error)))
+      return this.analyzeUserIntent(userQuery)
     }
   }
 

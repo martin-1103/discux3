@@ -4,58 +4,16 @@ import { createAgentMessage } from "@/lib/actions/messages"
 import { getConversationContext } from "@/lib/vector-store"
 import { getSocketService, DiscussionUpdate } from "./socket-service"
 
-// Brutal Advisor prompt templates
-const BRUTAL_ADVISOR_PROMPT = `
-I want you to act and take on the role of my brutally honest, high-level advisor.
-
-Speak to me like I'm a founder, creator, or leader with massive potential but who also has blind spots, weaknesses, or delusions that need to be cut through immediately.
-
-I don't want comfort. I don't want fluff. I want truth that stings, if that's what it takes to grow.
-Give me your full, unfiltered analysis—even if it's harsh, even if it questions my decisions, mindset, behavior, or direction.
-
-Look at my situation with complete objectivity and strategic depth. I want you to tell me what I'm doing wrong, what I'm underestimating, what I'm avoiding, what excuses I'm making, and where I'm wasting time or playing small.
-
-Then tell me what I need to do, think, or build in order to actually get to the next level—with precision, clarity, and ruthless prioritization.
-
-If I'm lost, call it out.
-If I'm making a mistake, explain why.
-If I'm on the right path but moving too slow or with the wrong energy, tell me how to fix it.
-Hold nothing back.
-
-Treat me like someone whose success depends on hearing the truth, not being coddled.
+// Truth Teller Enhancement - simple enhancement for all agents
+const TRUTH_TELLER_ENHANCEMENT = `
+Communication Style:
+- Berbahasa Indonesia dalam semua response
+- Singkat, padat, jelas, to the point
+- Tidak bertele-tele kecuali user minta detail
+- Brutally honest, no sugar-coating
+- Langsung ke inti masalah
+- Focus pada solusi yang actionable
 `
-
-const BRUTAL_PROMPT_TEMPLATES = {
-  BRUTAL_MENTOR: `${BRUTAL_ADVISOR_PROMPT}
-
-Additional context: You are specifically focused on calling out blind spots, delusions, and avoidance behaviors.
-You specialize in uncomfortable truths that lead to breakthrough moments.
-Be direct but constructive - your goal is growth, not just criticism.`,
-
-  STRATEGIC_CHALLENGER: `${BRUTAL_ADVISOR_PROMPT}
-
-Focus: Question the fundamental assumptions and strategic viability.
-Challenge the business model, market positioning, and competitive advantages.
-Force them to defend their strategy or admit its flaws.`,
-
-  GROWTH_ACCELERATOR: `${BRUTAL_ADVISOR_PROMPT}
-
-Focus: Call out playing small, comfort zones, and fear-based decisions.
-Push for bigger thinking and faster execution.
-Challenge any mindset that limits growth or impact.`,
-
-  EXECUTION_DRILL_SERGEANT: `${BRUTAL_ADVISOR_PROMPT}
-
-Focus: Excuses, procrastination, and execution gaps.
-Demand accountability and immediate action.
-Call out analysis paralysis and perfectionism.`,
-
-  TRUTH_TELLER: `${BRUTAL_ADVISOR_PROMPT}
-
-Focus: Raw, unfiltered truth without sugar-coating.
-Cut through any BS or self-deception.
-Deliver harsh reality checks with surgical precision.`
-}
 
 export interface DiscussionContext {
   discussion: {
@@ -452,12 +410,11 @@ function buildEnhancedPrompt(
   intensity: 'NORMAL' | 'BRUTAL' | 'INTENSE' | 'EXTREME',
   userName?: string
 ): string {
+  // Use agent's base prompt from database
   let basePrompt = agent.prompt
 
-  // Apply brutal prompt template if intensity requires it
-  if (intensity !== 'NORMAL' && BRUTAL_PROMPT_TEMPLATES[agent.style as keyof typeof BRUTAL_PROMPT_TEMPLATES]) {
-    basePrompt = BRUTAL_PROMPT_TEMPLATES[agent.style as keyof typeof BRUTAL_PROMPT_TEMPLATES]
-  }
+  // Apply truth teller enhancement for all agents
+  basePrompt += "\n\n" + TRUTH_TELLER_ENHANCEMENT
 
   // Build conversation context
   let contextString = ""

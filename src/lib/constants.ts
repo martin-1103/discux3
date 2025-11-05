@@ -23,11 +23,7 @@ export const SUBSCRIPTION_LIMITS = {
 
 // Agent Styles
 export const AGENT_STYLES = [
-  "PROFESSIONAL",
-  "DIRECT",
-  "FRIENDLY",
-  "CREATIVE",
-  "ANALYTICAL",
+  "TRUTH_TELLER",
 ] as const
 
 // Default Agent Colors

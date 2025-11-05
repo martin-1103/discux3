@@ -8,6 +8,14 @@ import logger from "@/lib/logger"
 import { generateCorrelationId } from "@/lib/logger"
 
 /**
+ * Clean message content by removing agent metadata
+ */
+function cleanMessageContent(content: string): string {
+  // Remove [AGENT:...] prefixes if present
+  return content.replace(/^\[AGENT:[^\]]*\]\n/, '').trim()
+}
+
+/**
  * Generate AI response for an agent in a room
  */
 export async function generateAgentResponse(
@@ -84,7 +92,7 @@ export async function generateAgentResponse(
 
     if (relevantContext.length > 0) {
       const contextLines = relevantContext.map((ctx: any) =>
-        `[${new Date(ctx.timestamp).toLocaleTimeString()}] ${ctx.author_name}: ${ctx.content}`
+        `[${new Date(ctx.timestamp).toLocaleTimeString()}] ${ctx.author_name}: ${cleanMessageContent(ctx.content)}`
       ).join('\n')
 
       enhancedPrompt = `${agent.prompt}

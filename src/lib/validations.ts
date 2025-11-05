@@ -6,7 +6,7 @@ export const createAgentSchema = z.object({
   prompt: z.string().min(10, "Prompt must be at least 10 characters").max(4000, "Prompt must be less than 4000 characters"),
   emoji: z.string().emoji("Invalid emoji").optional().default("🤖"),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid color format").optional().default("#3B82F6"),
-  style: z.enum(["PROFESSIONAL", "DIRECT", "FRIENDLY", "CREATIVE", "ANALYTICAL"]).default("PROFESSIONAL"),
+  style: z.enum(["TRUTH_TELLER"]).default("TRUTH_TELLER"),
 })
 
 export const updateAgentSchema = createAgentSchema.partial()

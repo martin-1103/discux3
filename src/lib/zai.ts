@@ -430,21 +430,12 @@ export class ZAIClient {
   }
 
   /**
-   * Build system prompt based on agent style
+   * Build system prompt with truth teller enhancement
    */
   private buildSystemPrompt(basePrompt: string): string {
-    return `${basePrompt}
-
-PEDOMAN RESPONSE:
-- Gunakan bahasa Indonesia dalam semua response
-- Format teks biasa saja, tanpa markdown (*, #, \`, dll)
-- Singkat, padat, dan jelas - tidak bertele-tele
-- Tidak perlu penjelasan berlebihan atau omong kosong
-- Berikan wawasan yang tajam dan bisa langsung ditindaklanjuti
-- Fokus pada kebenaran dan solusi praktis
-- Lawan asumsi yang salah jika perlu
-- Tetap langsung dan berdampak
-- Bersikap brutal jujur, tidak ada basa-basi`
+    // Since we handle truth teller enhancement in discussion orchestrator,
+    // just return the base prompt as-is
+    return basePrompt
   }
 
   /**
