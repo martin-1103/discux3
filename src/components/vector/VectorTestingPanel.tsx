@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { testVectorDatabase, getVectorDatabaseStats } from "@/lib/actions/ai"
+// API calls for vector testing
 import { useSession } from "next-auth/react"
 
 export function VectorTestingPanel() {
@@ -28,9 +28,16 @@ export function VectorTestingPanel() {
   const runSetupTest = async () => {
     setIsLoading(true)
     setSetupTest(null)
-    
+
     try {
-      const result = await testVectorDatabase()
+      const response = await fetch('/api/vector/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
       setSetupTest(result)
     } catch (error) {
       setSetupTest({
@@ -44,28 +51,24 @@ export function VectorTestingPanel() {
   
   const runContextTest = async () => {
     if (!testRoomId || !testQuery.trim()) return
-    
+
     setIsTestRunning(true)
     setContextTest(null)
-    
+
     try {
-      // For now, simulate context test since we don't have the specific function
-      const vectorStore = await import("@/lib/vector-store").then(m => m.getVectorStore())
-      const context = await vectorStore.getRelevantContext(testRoomId, testQuery, 3)
-      
-      setContextTest({
-        success: true,
-        data: {
-          contextCount: context.length,
-          context: context.map((ctx: any, index: number) => ({
-            rank: index + 1,
-            author: ctx.author_name,
-            content: ctx.content,
-            score: ctx.score,
-            timestamp: ctx.timestamp
-          }))
-        }
+      const response = await fetch('/api/vector/context', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roomId: testRoomId,
+          query: testQuery,
+        }),
       })
+
+      const result = await response.json()
+      setContextTest(result)
     } catch (error) {
       setContextTest({
         success: false,
@@ -78,28 +81,23 @@ export function VectorTestingPanel() {
   
   const runHistoryTest = async () => {
     if (!testRoomId) return
-    
+
     setIsTestRunning(true)
     setHistoryTest(null)
-    
+
     try {
-      // For now, simulate history test since we don't have the specific function
-      const vectorStore = await import("@/lib/vector-store").then(m => m.getVectorStore())
-      const history = await vectorStore.getConversationHistory(testRoomId, 5)
-      
-      setHistoryTest({
-        success: true,
-        data: {
-          messageCount: history.length,
-          history: history.map((msg: any, index: number) => ({
-            sequence: index + 1,
-            author: msg.author_name,
-            content: msg.content,
-            type: msg.message_type,
-            timestamp: msg.timestamp
-          }))
-        }
+      const response = await fetch('/api/vector/history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roomId: testRoomId,
+        }),
       })
+
+      const result = await response.json()
+      setHistoryTest(result)
     } catch (error) {
       setHistoryTest({
         success: false,
@@ -112,7 +110,8 @@ export function VectorTestingPanel() {
   
   const loadStats = async () => {
     try {
-      const result = await getVectorDatabaseStats()
+      const response = await fetch('/api/vector/stats')
+      const result = await response.json()
       setStats(result)
     } catch (error) {
       console.error("Failed to load stats:", error)

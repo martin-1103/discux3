@@ -21,10 +21,22 @@ export const SUBSCRIPTION_LIMITS = {
   },
 } as const
 
-// Agent Styles
-export const AGENT_STYLES = [
-  "TRUTH_TELLER",
-] as const
+// Agent Styles (Fixed - TRUTH_TELLER only)
+export const AGENT_STYLE = "TRUTH_TELLER" as const
+
+// Random color selection function
+export function getRandomAgentColor(): string {
+  const colors = [
+    "#3B82F6", // blue
+    "#10B981", // green
+    "#F59E0B", // amber
+    "#EF4444", // red
+    "#8B5CF6", // purple
+    "#EC4899", // pink
+    "#06B6D4", // cyan
+  ]
+  return colors[Math.floor(Math.random() * colors.length)]
+}
 
 // Default Agent Colors
 export const AGENT_COLORS = [

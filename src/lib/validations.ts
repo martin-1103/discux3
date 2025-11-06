@@ -3,10 +3,10 @@ import { z } from "zod"
 // Agent Validations
 export const createAgentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
-  prompt: z.string().min(10, "Prompt must be at least 10 characters").max(4000, "Prompt must be less than 4000 characters"),
-  emoji: z.string().emoji("Invalid emoji").optional().default("🤖"),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid color format").optional().default("#3B82F6"),
-  style: z.enum(["TRUTH_TELLER"]).default("TRUTH_TELLER"),
+  prompt: z.string().min(10, "Prompt must be at least 10 characters").max(100000, "Prompt must be less than 100000 characters"),
+  emoji: z.string().optional().default("bot-icon"),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid color format").optional(),
+  style: z.string().optional().default("TRUTH_TELLER"),
 })
 
 export const updateAgentSchema = createAgentSchema.partial()

@@ -6,7 +6,8 @@
       "Bash(find:*)",
       "Bash(npx prisma db execute:*)",
       "Bash(node:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

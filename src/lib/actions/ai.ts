@@ -567,3 +567,61 @@ export async function getAIModelInfo() {
     }
   }
 }
+
+/**
+ * Test vector context retrieval
+ */
+export async function testVectorContext(roomId: string, query: string) {
+  try {
+    const vectorStore = getVectorStore()
+    const context = await vectorStore.getRelevantContext(roomId, query, 3)
+
+    return {
+      success: true,
+      data: {
+        contextCount: context.length,
+        context: context.map((ctx: any, index: number) => ({
+          rank: index + 1,
+          author: ctx.author_name,
+          content: ctx.content,
+          score: ctx.score,
+          timestamp: ctx.timestamp
+        }))
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to test vector context retrieval"
+    }
+  }
+}
+
+/**
+ * Test vector conversation history
+ */
+export async function testVectorHistory(roomId: string) {
+  try {
+    const vectorStore = getVectorStore()
+    const history = await vectorStore.getConversationHistory(roomId, 5)
+
+    return {
+      success: true,
+      data: {
+        messageCount: history.length,
+        history: history.map((msg: any, index: number) => ({
+          sequence: index + 1,
+          author: msg.author_name,
+          content: msg.content,
+          type: msg.message_type,
+          timestamp: msg.timestamp
+        }))
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to test vector conversation history"
+    }
+  }
+}

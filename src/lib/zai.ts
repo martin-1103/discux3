@@ -94,8 +94,8 @@ export class ZAIClient {
     defaultModel?: string
   }) {
     this.apiKey = apiKey
-    this.baseURL = options?.baseURL || "https://api.z.ai/api/paas/v4"
-    this.defaultModel = options?.defaultModel || "glm-4.5-flash"
+    this.baseURL = options?.baseURL || "https://api.z.ai/api/anthropic/v1/messages"
+    this.defaultModel = options?.defaultModel || "glm-4.6"
   }
 
   /**

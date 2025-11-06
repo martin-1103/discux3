@@ -72,18 +72,12 @@ export async function createAgent(userId: string, data: CreateAgentInput) {
       return { success: false, error: "User not found" }
     }
 
-    // Check if user has reached agent limit
-    if (user._count.agents >= user.maxAgents) {
-      return { 
-        success: false, 
-        error: `You've reached your agent limit (${user.maxAgents}). Upgrade to create more agents.` 
-      }
-    }
-
+  
     // Create agent
     const agent = await prisma.agent.create({
       data: {
         ...validatedData,
+        style: "TRUTH_TELLER", // Force style to be TRUTH_TELLER
         createdBy: userId,
       },
     })
@@ -119,7 +113,10 @@ export async function updateAgent(id: string, userId: string, data: UpdateAgentI
     // Update agent
     const agent = await prisma.agent.update({
       where: { id },
-      data: validatedData,
+      data: {
+        ...validatedData,
+        style: "TRUTH_TELLER", // Force style to be TRUTH_TELLER
+      },
     })
 
     revalidatePath("/agents")
