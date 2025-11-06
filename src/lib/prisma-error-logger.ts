@@ -26,7 +26,7 @@ export class LoggedPrismaClient extends PrismaClient {
     });
 
     // Log queries
-    this.$on('query', (e) => {
+    (this as any).$on('query', (e: any) => {
       const queryTime = e.duration;
       const slowQueryThreshold = 1000; // 1 second
 
@@ -52,8 +52,8 @@ export class LoggedPrismaClient extends PrismaClient {
     });
 
     // Log errors
-    this.$on('error', (e) => {
-      logger.prisma('Database Error', {
+    (this as any).$on('error', (e: any) => {
+      logger.prisma('Database Error', null, {
         message: e.message,
         target: e.target,
         timestamp: e.timestamp
@@ -61,7 +61,7 @@ export class LoggedPrismaClient extends PrismaClient {
     });
 
     // Log info
-    this.$on('info', (e) => {
+    (this as any).$on('info', (e: any) => {
       logger.info(`Prisma Info`, {
         message: e.message,
         target: e.target,
@@ -70,7 +70,7 @@ export class LoggedPrismaClient extends PrismaClient {
     });
 
     // Log warnings
-    this.$on('warn', (e) => {
+    (this as any).$on('warn', (e: any) => {
       logger.warn(`Prisma Warning`, {
         message: e.message,
         target: e.target,
@@ -84,9 +84,7 @@ export class LoggedPrismaClient extends PrismaClient {
     try {
       return await queryFn();
     } catch (error) {
-      logger.database(`Query failed in ${context}`, {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      logger.database(`Query failed in ${context}`, error, {
         context,
         timestamp: new Date().toISOString()
       });
@@ -99,9 +97,7 @@ export class LoggedPrismaClient extends PrismaClient {
     try {
       return await this.message.create({ data });
     } catch (error) {
-      logger.database(`Failed to create message in ${context}`, {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      logger.database(`Failed to create message in ${context}`, error, {
         data,
         context,
         timestamp: new Date().toISOString()
@@ -118,9 +114,7 @@ export class LoggedPrismaClient extends PrismaClient {
         orderBy: { timestamp: 'desc' }
       });
     } catch (error) {
-      logger.database(`Failed to get messages in ${context}`, {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      logger.database(`Failed to get messages in ${context}`, error, {
         roomId,
         context,
         timestamp: new Date().toISOString()
@@ -138,9 +132,7 @@ export class LoggedPrismaClient extends PrismaClient {
       });
       return true;
     } catch (error) {
-      logger.database('Database connection failed', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      logger.database('Database connection failed', error, {
         timestamp: new Date().toISOString()
       });
       return false;
@@ -173,9 +165,7 @@ export const ensureDatabaseConnection = async (): Promise<boolean> => {
     }
     return true;
   } catch (error) {
-    logger.error('Database connection check failed', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+    logger.error('Database connection check failed', error, {
       timestamp: new Date().toISOString()
     });
     return false;

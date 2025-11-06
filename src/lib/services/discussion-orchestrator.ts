@@ -3,6 +3,40 @@ import { getZAIClient } from "@/lib/zai"
 import { createAgentMessage } from "@/lib/actions/messages"
 import { getConversationContext } from "@/lib/vector-store"
 import { getSocketService, DiscussionUpdate, AgentProgressUpdate } from "./socket-service"
+import { getEnhancedVectorSearch } from "./enhanced-vector-search"
+import { debugLog } from "@/lib/utils/debug-logger"
+import type { QueryIntent } from "./enhanced-vector-search"
+
+// Define AITrueIntent type locally - aligned with QueryIntent from enhanced-vector-search
+interface AITrueIntent {
+  primary: string
+  context: string
+  confidence: number
+  // Additional properties to match QueryIntent usage
+  userIntent?: string
+  desiredOutcome?: string
+  conversationContext?: string
+  agentInstructions?: Map<string, string>
+  topicFocus?: string
+  vectorQuery?: string
+}
+
+// Convert QueryIntent to AITrueIntent format
+function convertQueryIntentToAITrueIntent(queryIntent: QueryIntent): AITrueIntent {
+  return {
+    primary: queryIntent.primaryIntent,
+    context: queryIntent.topicFocus || 'general discussion',
+    confidence: queryIntent.confidence,
+    userIntent: `Looking for ${queryIntent.primaryIntent} with ${queryIntent.responseFormat} format`,
+    desiredOutcome: `${queryIntent.responseFormat} response about ${queryIntent.topicFocus || 'the topic'}`,
+    conversationContext: queryIntent.timeReference === 'recent' ? 'recent conversation' : 'historical context',
+    agentInstructions: new Map([
+      ['all', `Provide ${queryIntent.responseFormat} insights related to ${queryIntent.topicFocus || 'the topic'}`]
+    ]),
+    topicFocus: queryIntent.topicFocus,
+    vectorQuery: queryIntent.topicFocus || ''
+  }
+}
 
 // Truth Teller Enhancement - simple enhancement for all agents
 const TRUTH_TELLER_ENHANCEMENT = `
@@ -41,6 +75,7 @@ export interface DiscussionContext {
     commonExcuses: string[]
     growthBlockers: string[]
   }
+  aiIntent?: AITrueIntent  // AI-driven intent analysis and instructions
 }
 
 /**
@@ -71,11 +106,11 @@ export async function createDiscussion(
         intensity,
         turnOrder: JSON.stringify(turnOrder),
         status: 'ACTIVE',
-        metadata: {
+        metadata: JSON.stringify({
           startTime: new Date().toISOString(),
           intensity,
           expectedDuration: calculateExpectedDuration(agents.length, intensity)
-        }
+        })
       }
     })
 
@@ -144,24 +179,36 @@ export async function executeDiscussion(
 
     // Get conversation context
     const conversationHistory = await getConversationContext(
-      discussion.roomId,
+      discussion.room.id,
       discussion.message.content,
       10
     )
 
+    // Get AI-driven intent analysis for enhanced context
+    let aiIntent: AITrueIntent | undefined = undefined
+    try {
+      const enhancedSearch = getEnhancedVectorSearch()
+      const intentResult = await enhancedSearch.analyzeQuery(discussion.message.content, discussion.room.id, userId)
+      aiIntent = convertQueryIntentToAITrueIntent(intentResult.intent)
+    } catch (error) {
+      console.error("Error getting AI intent analysis for discussion:", error)
+      // Continue without AI intent - fallback to traditional approach
+    }
+
     // Analyze user patterns if brutal mode
     let userPatterns = undefined
     if (discussion.intensity !== 'NORMAL') {
-      userPatterns = await analyzeUserPatterns(userId, discussion.roomId)
+      userPatterns = await analyzeUserPatterns(userId, discussion.room.id)
     }
 
-    // Continue discussion from current turn
+    // Continue discussion from current turn with AI-enhanced context
     const result = await continueDiscussion(
       { ...discussion, turnOrder }, // Add parsed turnOrder to discussion object
       conversationHistory,
       userPatterns,
       userId,
-      userName
+      userName,
+      aiIntent  // Pass AI intent analysis to discussion
     )
 
     return result
@@ -182,7 +229,8 @@ async function continueDiscussion(
   conversationHistory: any[],
   userPatterns: any,
   userId: string,
-  userName?: string
+  userName?: string,
+  aiIntent?: AITrueIntent
 ) {
   const responses = []
   const { turnOrder, currentTurn, maxTurns, intensity } = discussion
@@ -215,7 +263,8 @@ async function continueDiscussion(
       agentId,
       i,
       conversationHistory,
-      userPatterns
+      userPatterns,
+      aiIntent
     )
 
     // Get agent information for broadcasting
@@ -230,20 +279,20 @@ async function continueDiscussion(
       const startingProgress: AgentProgressUpdate = {
         type: 'agent_starting',
         discussionId: discussion.id,
-        roomId: discussion.roomId,
+        roomId: discussion.room.id,
         agentId,
         agentName: agent?.name || 'Agent',
         agentEmoji: agent?.emoji || '🤖',
         turnOrder: i,
         totalTurns: turnOrder.length
       }
-      socketService.broadcastAgentProgress(discussion.roomId, startingProgress)
+      socketService.broadcastAgentProgress(discussion.room.id, startingProgress)
     }
 
     // Generate agent response
     const response = await generateContextualAgentResponse(
       agentId,
-      discussion.roomId,
+      discussion.room.id,
       context,
       discussion.message.content,
       userId,
@@ -257,7 +306,7 @@ async function continueDiscussion(
         data: {
           discussionId: discussion.id,
           agentId,
-          messageId: response.data.message.id,
+          messageId: response.data!.message.id,
           turnOrder: i,
           respondingTo: i > 0 ? turnOrder[i - 1] : null,
           responseTo: i > 0 ? discussion.responses[i - 1]?.messageId : null
@@ -276,28 +325,28 @@ async function continueDiscussion(
       const completionProgress: AgentProgressUpdate = {
         type: 'agent_complete',
         discussionId: discussion.id,
-        roomId: discussion.roomId,
+        roomId: discussion.room.id,
         agentId,
         agentName: agent?.name || 'Agent',
         agentEmoji: agent?.emoji || '🤖',
         turnOrder: i,
         totalTurns: turnOrder.length,
-        processingTime: response.data.response?.processingTime
+        processingTime: response.data?.response?.processingTime || 0
       }
-      socketService.broadcastAgentProgress(discussion.roomId, completionProgress)
+      socketService!.broadcastAgentProgress(discussion.room.id, completionProgress)
 
       // Broadcast discussion update via Socket.io
       if (socketService) {
         const update: DiscussionUpdate = {
           discussionId: discussion.id,
-          roomId: discussion.roomId,
+          roomId: discussion.room.id,
           status: 'STARTED', // Still ongoing
           currentTurn: i + 1,
           currentAgent: turnOrder[i + 1], // Next agent
           nextAgent: turnOrder[i + 2], // Agent after next
           intensity: discussion.intensity
         }
-        socketService.broadcastDiscussionUpdate(discussion.roomId, update)
+        socketService.broadcastDiscussionUpdate(discussion.room.id, update)
       }
 
       // Add delay for natural feel
@@ -309,7 +358,7 @@ async function continueDiscussion(
       const errorProgress: AgentProgressUpdate = {
         type: 'agent_error',
         discussionId: discussion.id,
-        roomId: discussion.roomId,
+        roomId: discussion.room.id,
         agentId,
         agentName: agent?.name || 'Agent',
         agentEmoji: agent?.emoji || '🤖',
@@ -318,7 +367,7 @@ async function continueDiscussion(
         errorMessage: response.error || "Unknown error"
       }
       if (socketService) {
-        socketService.broadcastAgentProgress(discussion.roomId, errorProgress)
+        socketService.broadcastAgentProgress(discussion.room.id, errorProgress)
       }
     }
   }
@@ -340,10 +389,11 @@ async function continueDiscussion(
  */
 async function buildAgentContext(
   discussion: any,
-  agentId: string,
+  _agentId: string,  // Prefix with underscore to indicate intentionally unused
   turnOrder: number,
   conversationHistory: any[],
-  userPatterns?: any
+  userPatterns?: any,
+  aiIntent?: AITrueIntent
 ): Promise<DiscussionContext> {
   const previousResponses = discussion.responses.slice(0, turnOrder)
 
@@ -364,7 +414,8 @@ async function buildAgentContext(
       respondingTo: idx > 0 ? discussion.responses[idx - 1].agent.name : undefined
     })),
     conversationHistory,
-    userPatterns
+    userPatterns,
+    aiIntent  // Include AI-driven intent analysis and instructions
   }
 }
 
@@ -406,7 +457,7 @@ async function generateContextualAgentResponse(
       enhancedPrompt,
       agent.style,
       userMessage,
-      context.previousResponses.map(r => r.content),
+      context.previousResponses.map(r => ({ role: r.agentName, content: r.content })),
       userId
     )
 
@@ -420,7 +471,7 @@ async function generateContextualAgentResponse(
       JSON.stringify(context).length + response.content.length
     )
 
-    if (!message.success) {
+    if (!message.success || !message.data) {
       throw new Error("Failed to create agent message")
     }
 
@@ -434,7 +485,7 @@ async function generateContextualAgentResponse(
           color: agent.color,
           style: agent.style
         },
-        message: message.data,
+        message: message.data!,
         response: {
           content: response.content,
           model: response.model,
@@ -461,11 +512,17 @@ function buildEnhancedPrompt(
   intensity: 'NORMAL' | 'BRUTAL' | 'INTENSE' | 'EXTREME',
   userName?: string
 ): string {
+  debugLog('PROMPT', `Building prompt for agent: ${agent.name}`)
+
   // Use agent's base prompt from database
   let basePrompt = agent.prompt
+  debugLog('PROMPT', `Base prompt: "${basePrompt}"`)
+  debugLog('PROMPT', `Base prompt length: ${basePrompt.length} chars`)
 
   // Apply truth teller enhancement for all agents
   basePrompt += "\n\n" + TRUTH_TELLER_ENHANCEMENT
+  debugLog('PROMPT', `Adding Indonesian language enhancement: "${TRUTH_TELLER_ENHANCEMENT}"`)
+  debugLog('PROMPT', `Final prompt with enhancement length: ${basePrompt.length} chars`)
 
   // Build conversation context
   let contextString = ""
@@ -477,6 +534,29 @@ function buildEnhancedPrompt(
     contextString = `
 PREVIOUS RESPONSES IN THIS DISCUSSION:
 ${previousResponsesText}
+
+`
+  }
+
+  // Add AI-driven context and instructions if available
+  let aiContextString = ""
+  if (context.aiIntent) {
+    // Get specific instructions for this agent
+    const agentInstruction = context.aiIntent.agentInstructions?.get(agent.name.toLowerCase()) ||
+                           context.aiIntent.agentInstructions?.get('all') ||
+                           `Provide helpful insights related to ${context.aiIntent.topicFocus || 'the topic'}`
+
+    aiContextString = `
+AI-ANALYZED CONTEXT:
+User's True Intent: ${context.aiIntent.userIntent}
+Desired Outcome: ${context.aiIntent.desiredOutcome}
+Discussion Context: ${context.aiIntent.conversationContext}
+
+YOUR SPECIFIC INSTRUCTIONS:
+${agentInstruction}
+
+VECTOR SEARCH QUERY USED: ${context.aiIntent.vectorQuery}
+CONFIDENCE LEVEL: ${context.aiIntent.confidence}
 
 `
   }
@@ -501,9 +581,10 @@ USER PATTERNS I'VE NOTICED:
 
   const intensityMultiplier = intensity === 'EXTREME' ? 3 : intensity === 'INTENSE' ? 2 : intensity === 'BRUTAL' ? 1.5 : 1
 
-  return `${basePrompt}
+  const finalPrompt = `${basePrompt}
 
 ${contextString}
+${aiContextString}
 ${userPatternsString}
 DISCUSSION CONTEXT:
 - Topic: ${context.discussion.topic || 'Open discussion'}
@@ -531,7 +612,23 @@ BRUTAL MODE ACTIVATED:
 - Be uncomfortably honest but growth-focused
 - No fluff, no comfort, just truth that drives action
 ` : ''}
+
+${context.aiIntent ? '\n⚡ PRIORITY: Follow the AI-analyzed instructions above for optimal user value.' : ''}
 `
+
+  debugLog('PROMPT', `Final complete prompt for ${agent.name}:`, {
+    totalLength: finalPrompt.length,
+    hasIndonesianInstruction: finalPrompt.includes('Berbahasa Indonesia'),
+    contextSections: {
+      basePrompt: basePrompt.length,
+      contextString: contextString.length,
+      aiContextString: aiContextString.length,
+      userPatternsString: userPatternsString.length
+    }
+  })
+  debugLog('PROMPT', `Full prompt content: "${finalPrompt}"`)
+
+  return finalPrompt
 }
 
 /**
@@ -542,8 +639,8 @@ function determineOptimalTurnOrder(
   intensity: 'NORMAL' | 'BRUTAL' | 'INTENSE' | 'EXTREME'
 ): string[] {
   // Priority order for different intensities
-  const brutalPriority = ['BRUTAL_MENTOR', 'TRUTH_TELLER', 'STRATEGIC_CHALLENGER', 'EXECUTION_DRILL_SERGEANT', 'GROWTH_ACCELERATOR']
-  const normalPriority = ['PROFESSIONAL', 'ANALYTICAL', 'DIRECT', 'CREATIVE', 'FRIENDLY']
+  const brutalPriority = ['TRUTH_TELLER']
+  const normalPriority = ['TRUTH_TELLER']
 
   const priority = intensity !== 'NORMAL' ? brutalPriority : normalPriority
 
@@ -586,7 +683,11 @@ async function analyzeUserPatterns(userId: string, roomId: string) {
     })
 
     // Simple pattern analysis (can be enhanced with ML/AI)
-    const patterns = {
+    const patterns: {
+      blindSpots: string[]
+      commonExcuses: string[]
+      growthBlockers: string[]
+    } = {
       blindSpots: [],
       commonExcuses: [],
       growthBlockers: []
@@ -645,7 +746,7 @@ export async function pauseDiscussion(discussionId: string) {
     const discussion = await prisma.discussion.update({
       where: { id: discussionId },
       data: { status: 'PAUSED' },
-      include: { roomId: true }
+      include: { room: true }
     })
 
     // Broadcast pause via Socket.io
@@ -653,11 +754,11 @@ export async function pauseDiscussion(discussionId: string) {
     if (socketService) {
       const update: DiscussionUpdate = {
         discussionId,
-        roomId: discussion.roomId,
+        roomId: discussion.room.id,
         status: 'PAUSED',
         intensity: discussion.intensity
       }
-      socketService.broadcastDiscussionUpdate(discussion.roomId, update)
+      socketService.broadcastDiscussionUpdate(discussion.room.id, update)
     }
 
     return { success: true }
@@ -677,7 +778,7 @@ export async function resumeDiscussion(discussionId: string) {
     const discussion = await prisma.discussion.update({
       where: { id: discussionId },
       data: { status: 'ACTIVE' },
-      include: { roomId: true, turnOrder: true, currentTurn: true }
+      include: { room: true }
     })
 
     // Broadcast resume via Socket.io
@@ -685,14 +786,14 @@ export async function resumeDiscussion(discussionId: string) {
     if (socketService) {
       const update: DiscussionUpdate = {
         discussionId,
-        roomId: discussion.roomId,
+        roomId: discussion.room.id,
         status: 'RESUMED',
         currentTurn: discussion.currentTurn,
         currentAgent: discussion.turnOrder[discussion.currentTurn],
         nextAgent: discussion.turnOrder[discussion.currentTurn + 1],
         intensity: discussion.intensity
       }
-      socketService.broadcastDiscussionUpdate(discussion.roomId, update)
+      socketService.broadcastDiscussionUpdate(discussion.room.id, update)
     }
 
     return { success: true }
@@ -712,7 +813,7 @@ export async function stopDiscussion(discussionId: string) {
     const discussion = await prisma.discussion.update({
       where: { id: discussionId },
       data: { status: 'STOPPED' },
-      include: { roomId: true }
+      include: { room: true }
     })
 
     // Broadcast stop via Socket.io
@@ -720,11 +821,11 @@ export async function stopDiscussion(discussionId: string) {
     if (socketService) {
       const update: DiscussionUpdate = {
         discussionId,
-        roomId: discussion.roomId,
+        roomId: discussion.room.id,
         status: 'STOPPED',
         intensity: discussion.intensity
       }
-      socketService.broadcastDiscussionUpdate(discussion.roomId, update)
+      socketService.broadcastDiscussionUpdate(discussion.room.id, update)
     }
 
     return { success: true }

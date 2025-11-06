@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from "next"
+import { NextApiRequest } from "next"
 import { NextApiResponseWithSocket, initializeSocket } from "@/lib/services/socket-service"
 import { Server as NetServer } from "http"
 
@@ -9,7 +9,7 @@ export const config = {
 }
 
 // Socket.io handler
-const SocketHandler = (req: NextApiRequest, res: NextApiResponseWithSocket) => {
+const SocketHandler = (_req: NextApiRequest, res: NextApiResponseWithSocket) => {
   if (res.socket.server.io) {
     console.log("[Socket] Socket.io already initialized")
     res.end()

@@ -6,15 +6,17 @@
 import { IdMapper, getIdMapper, resetIdMapper } from '../id-mapper'
 
 // Mock Prisma client
-jest.mock('../db', () => ({
-  prisma: {
-    vectorIdMapping: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      createMany: jest.fn()
-    }
+const mockPrisma = {
+  vectorIdMapping: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    createMany: jest.fn()
   }
+}
+
+jest.mock('../db', () => ({
+  prisma: mockPrisma
 }))
 
 import { prisma } from '../db'

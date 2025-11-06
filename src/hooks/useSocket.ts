@@ -2,27 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
-
-// Dynamic import untuk socket.io-client
-let io: any = null
-let socketClientLoaded = false
-
-// Fungsi untuk load socket.io-client secara dinamis
-async function loadSocketClient() {
-  if (socketClientLoaded && io) return io
-
-  try {
-    console.log('[Socket] Loading socket.io-client module...')
-    const socketModule = await import('socket.io-client')
-    io = socketModule.io
-    socketClientLoaded = true
-    console.log('[Socket] socket.io-client loaded successfully:', typeof io)
-    return io
-  } catch (error) {
-    console.error('[Socket] Failed to load socket.io-client:', error)
-    throw error
-  }
-}
+import { io as SocketIO } from "socket.io-client"
 
 import {
   SocketMessage,
@@ -92,18 +72,6 @@ export function useSocket(options: UseSocketOptions = {}) {
     const userId = propUserId || session?.user?.id || 'cmhk9lqk0000114aj3q0q8p1w'
     const userName = propUserName || session?.user?.name || 'pile'
 
-    // Load socket.io-client dynamically
-    try {
-      const io = await loadSocketClient()
-      if (!io) {
-        setState(prev => ({ ...prev, isConnected: false, isConnecting: false, error: 'Socket.io client not available' }))
-        return
-      }
-    } catch (error) {
-      setState(prev => ({ ...prev, isConnected: false, isConnecting: false, error: 'Failed to load socket.io-client' }))
-      return
-    }
-
     // Check if we already have a socket for this user
     if (globalSocket && globalSocketUserId === userId) {
       if (globalSocket.connected) {
@@ -133,18 +101,14 @@ export function useSocket(options: UseSocketOptions = {}) {
       setState(prev => ({ ...prev, isConnecting: true, error: null }))
 
     try {
-      // Load socket.io-client if not already loaded
-      const io = await loadSocketClient()
-      if (!io) {
-        throw new Error('Socket.io client not available')
-      }
+      // Use statically imported SocketIO client
 
       const authData = {
         userId,
         userName
       }
 
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || `http://localhost:${process.env.PORT || 3000}`, {
+      const socket = SocketIO(process.env.NEXT_PUBLIC_SOCKET_URL || `http://localhost:${process.env.PORT || 3000}`, {
         transports: ['websocket', 'polling'],
         upgrade: true,
         rememberUpgrade: true,
@@ -161,7 +125,7 @@ export function useSocket(options: UseSocketOptions = {}) {
         setState(prev => ({ ...prev, isConnected: true, isConnecting: false, error: null }))
       })
 
-      socket.on('disconnect', (reason) => {
+      socket.on('disconnect', (_reason: string) => {
             setState(prev => ({ ...prev, isConnected: false, isConnecting: false }))
 
         // Clear online users and typing indicators
@@ -170,13 +134,13 @@ export function useSocket(options: UseSocketOptions = {}) {
         setJoinedRooms(new Set())
       })
 
-      socket.on('connect_error', (error) => {
+      socket.on('connect_error', (error: Error) => {
         console.error("[Socket] Connection error:", error)
         setState(prev => ({
           ...prev,
           isConnected: false,
           isConnecting: false,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         }))
       })
 

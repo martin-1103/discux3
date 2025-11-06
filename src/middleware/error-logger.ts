@@ -80,7 +80,7 @@ export function withErrorHandler(handler: (req: NextRequest) => Promise<NextResp
       return NextResponse.json(
         {
           error: 'Internal Server Error',
-          message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+          message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : 'Something went wrong',
           timestamp
         },
         { status: statusCode }

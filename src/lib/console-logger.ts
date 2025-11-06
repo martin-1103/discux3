@@ -1,5 +1,3 @@
-import logger from './logger';
-
 // Store original console methods
 const originalConsole = {
   log: console.log,
@@ -30,19 +28,13 @@ class ConsoleLogger {
     console.error = (...args: any[]) => {
       originalConsole.error(...args);
       this.logToFile('ERROR', args);
-      logger.error('Console Error', {
-        message: args.join(' '),
-        timestamp: new Date().toISOString()
-      });
+      // Removed logger dependency to fix circular dependency
     };
 
     console.warn = (...args: any[]) => {
       originalConsole.warn(...args);
       this.logToFile('WARN', args);
-      logger.warn('Console Warning', {
-        message: args.join(' '),
-        timestamp: new Date().toISOString()
-      });
+      // Removed logger dependency to fix circular dependency
     };
 
     console.info = (...args: any[]) => {

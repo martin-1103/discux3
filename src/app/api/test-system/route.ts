@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getVectorStore } from '@/lib/vector-store'
 import { getZAIClient } from '@/lib/zai'
 

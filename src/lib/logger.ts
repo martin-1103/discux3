@@ -1,7 +1,7 @@
 import winston from 'winston';
 
 // Extended logger interface with AI-specific methods
-interface ExtendedLogger extends winston.Logger {
+interface ExtendedLogger {
   aiRequest: (correlationId: string, request: {
     endpoint?: string;
     model?: string;
@@ -42,6 +42,29 @@ interface ExtendedLogger extends winston.Logger {
     contextUsed?: boolean;
     [key: string]: any;
   }) => void;
+
+  detailedError: (message: string, error?: Error | any, context?: any) => void;
+
+  validation: (message: string, data?: any) => void;
+
+  api: (message: string, method?: string, url?: string, statusCode?: number, duration?: number, userId?: string, ip?: string, userAgent?: string) => void;
+
+  stream: {
+    write: (message: string) => void;
+  };
+
+  prisma: (message: string, error?: Error | any, context?: any) => void;
+
+  auth: (message: string, error?: Error | any, context?: any) => void;
+
+  database: (message: string, error?: Error | any, context?: any) => void;
+
+  socket: (message: string, event?: string, socketId?: string, data?: any) => void;
+
+  error: (message: string, ...meta: any[]) => void;
+  warn: (message: string, ...meta: any[]) => void;
+  info: (message: string, ...meta: any[]) => void;
+  debug: (message: string, ...meta: any[]) => void;
 }
 
 // Define log levels
@@ -134,13 +157,65 @@ const transports = [
   }),
 ];
 
-// Create the logger
-const logger = winston.createLogger({
+// Create the base logger
+const baseLogger = winston.createLogger({
   level: 'error', // Only log errors (suppress warnings)
   levels,
   transports,
   exitOnError: false,
-}) as ExtendedLogger;
+});
+
+// Create the extended logger
+const logger: ExtendedLogger = {
+  ...baseLogger,
+  // Ensure basic winston methods are properly bound
+  error: (message: string, ...meta: any[]) => baseLogger.error(message, ...meta),
+  warn: (message: string, ...meta: any[]) => baseLogger.warn(message, ...meta),
+  info: (message: string, ...meta: any[]) => baseLogger.info(message, ...meta),
+  debug: (message: string, ...meta: any[]) => baseLogger.debug(message, ...meta),
+  stream: {
+    write: (message: string) => {
+      // Morgan-compatible stream implementation will be added below
+      baseLogger.info(message.trim());
+    }
+  },
+  aiRequest: (correlationId: string, request: any) => {
+    baseLogger.info(`AI Request [${correlationId}]`, { category: 'ai', type: 'request', ...request })
+  },
+  aiResponse: (correlationId: string, response: any) => {
+    baseLogger.info(`AI Response [${correlationId}]`, { category: 'ai', type: 'response', ...response })
+  },
+  aiError: (correlationId: string, message: string, error?: Error, context?: any) => {
+    baseLogger.error(`AI Error [${correlationId}]: ${message}`, { category: 'ai', type: 'error', error: error?.message, stack: error?.stack, ...context })
+  },
+  aiIntent: (correlationId: string, context: any) => {
+    baseLogger.debug(`AI Intent [${correlationId}]`, { category: 'ai', type: 'intent', ...context })
+  },
+  aiContext: (correlationId: string, context: any) => {
+    baseLogger.debug(`AI Context [${correlationId}]`, { category: 'ai', type: 'context', ...context })
+  },
+  detailedError: (message: string, error?: Error, context?: any) => {
+    baseLogger.error(message, { category: 'detailed_error', error: error?.message, stack: error?.stack, ...context })
+  },
+  validation: (message: string, data?: any) => {
+    baseLogger.warn(message, { category: 'validation', data })
+  },
+  api: (message: string, method?: string, url?: string, statusCode?: number, duration?: number, userId?: string, ip?: string, userAgent?: string) => {
+    baseLogger.info(message, { category: 'api', method, url, statusCode, duration, userId, ip, userAgent })
+  },
+  prisma: (message: string, error?: Error, context?: any) => {
+    baseLogger.error(message, { category: 'prisma', error: error?.message, stack: error?.stack, ...context })
+  },
+  auth: (message: string, error?: Error, context?: any) => {
+    baseLogger.error(message, { category: 'auth', error: error?.message, stack: error?.stack, ...context })
+  },
+  database: (message: string, error?: Error, context?: any) => {
+    baseLogger.error(message, { category: 'database', error: error?.message, stack: error?.stack, ...context })
+  },
+  socket: (message: string, event?: string, socketId?: string, data?: any) => {
+    baseLogger.info(message, { category: 'socket', event, socketId, data })
+  }
+};
 
 // Helper function to gather system context
 const getSystemContext = () => {
@@ -179,10 +254,10 @@ logger.detailedError = (
   };
 
   if (error) {
-    errorInfo.errorName = error.name;
-    errorInfo.errorMessage = error.message;
+    errorInfo.errorName = error instanceof Error ? error.name : 'Unknown';
+    errorInfo.errorMessage = error instanceof Error ? error.message : String(error);
     errorInfo.errorCode = error.code;
-    errorInfo.errorStack = error.stack;
+    errorInfo.errorStack = error instanceof Error ? error.stack : undefined;
 
     // Add custom error properties
     if (error.status) errorInfo.statusCode = error.status;
@@ -190,7 +265,7 @@ logger.detailedError = (
     if (error.path) errorInfo.errorPath = error.path;
   }
 
-  logger.error(message, errorInfo);
+  baseLogger.error(message, errorInfo);
 };
 
 // Database error logging with enhanced details
@@ -202,20 +277,8 @@ logger.database = (message: string, error?: Error | any, context?: any) => {
 };
 
 // API error logging with enhanced details
-logger.api = (message: string, error?: Error | any, context?: {
-  userId?: string;
-  requestId?: string;
-  method?: string;
-  url?: string;
-  statusCode?: number;
-  userAgent?: string;
-  ip?: string;
-  [key: string]: any;
-}) => {
-  logger.detailedError(message, error, {
-    category: 'api',
-    ...context
-  });
+logger.api = (message: string, method?: string, url?: string, statusCode?: number, duration?: number, userId?: string, ip?: string, userAgent?: string) => {
+  baseLogger.info(message, { category: 'api', method, url, statusCode, duration, userId, ip, userAgent });
 };
 
 // Prisma error logging with enhanced details
@@ -290,7 +353,7 @@ logger.aiRequest = (correlationId: string, request: {
   headers?: any;
   [key: string]: any;
 }) => {
-  logger.info('AI Request Started', {
+  baseLogger.info('AI Request Started', {
     category: 'ai_request',
     correlationId,
     ...sanitizeData(request)
@@ -306,7 +369,7 @@ logger.aiResponse = (correlationId: string, response: {
   headers?: any;
   [key: string]: any;
 }) => {
-  logger.info('AI Response Received', {
+  baseLogger.info('AI Response Received', {
     category: 'ai_response',
     correlationId,
     ...sanitizeData(response)
@@ -335,7 +398,7 @@ logger.aiIntent = (correlationId: string, context: {
   [key: string]: any;
 }) => {
   const level = context.fallback ? 'warn' : 'info';
-  logger[level](`AI Intent Analysis${context.fallback ? ' (Fallback)' : ''}`, {
+  baseLogger[level](`AI Intent Analysis${context.fallback ? ' (Fallback)' : ''}`, {
     category: 'ai_intent',
     correlationId,
     ...sanitizeData(context)
@@ -350,7 +413,7 @@ logger.aiContext = (correlationId: string, context: {
   contextUsed?: boolean;
   [key: string]: any;
 }) => {
-  logger.info('AI Context Search', {
+  baseLogger.info('AI Context Search', {
     category: 'ai_context',
     correlationId,
     ...sanitizeData(context)
@@ -358,7 +421,7 @@ logger.aiContext = (correlationId: string, context: {
 };
 
 // Create a stream for Morgan HTTP logging (convert HTTP errors to detailed errors)
-logger.stream = {
+const enhancedStream = {
   write: (message: string) => {
     // Only log HTTP requests that have error status codes
     const statusCodeMatch = message.match(/\" (4\d{2}|5\d{2}) /);
@@ -369,15 +432,13 @@ logger.stream = {
       const urlMatch = message.match(/ (\/[^\s]*) HTTP/);
       const url = urlMatch ? urlMatch[1] : '/unknown';
 
-      logger.api(`HTTP Error: ${statusCode} ${method} ${url}`, new Error(`HTTP ${statusCode}`), {
-        method,
-        url,
-        statusCode,
-        category: 'http_error'
-      });
+      logger.api(`HTTP Error: ${statusCode} ${method} ${url}`, method, url, statusCode);
     }
   }
 };
+
+// Replace the existing stream with enhanced version
+logger.stream = enhancedStream;
 
 export { generateCorrelationId };
 

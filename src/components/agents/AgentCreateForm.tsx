@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { useForm } from "react-hook-form"
+import { useForm, SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createAgentSchema, type CreateAgentInput } from "@/lib/validations"
 import { createAgent } from "@/lib/actions/agents"
@@ -34,7 +34,7 @@ export function AgentCreateForm() {
     defaultValues: {
       emoji: "🤖",
       color: "#3B82F6",
-      style: "PROFESSIONAL",
+      style: "TRUTH_TELLER",
     },
   })
 
@@ -43,7 +43,7 @@ export function AgentCreateForm() {
   const watchedName = watch("name")
   const watchedPrompt = watch("prompt")
 
-  const onSubmit = async (data: CreateAgentInput) => {
+  const onSubmit: SubmitHandler<CreateAgentInput> = async (data) => {
     if (!session?.user?.id) {
       setError("You must be logged in to create an agent")
       return

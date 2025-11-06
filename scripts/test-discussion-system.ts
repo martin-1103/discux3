@@ -144,7 +144,7 @@ class DiscussionSystemTester {
 
     try {
       // Test brutal advisor agent styles
-      const brutalStyles = ['BRUTAL_MENTOR', 'STRATEGIC_CHALLENGER', 'GROWTH_ACCELERATOR', 'EXECUTION_DRILL_SERGEANT', 'TRUTH_TELLER']
+      const brutalStyles = ['TRUTH_TELLER']
 
       for (const style of brutalStyles) {
         if (!Object.values(['PROFESSIONAL', 'DIRECT', 'FRIENDLY', 'CREATIVE', 'ANALYTICAL', ...brutalStyles]).includes(style as any)) {
@@ -177,7 +177,7 @@ class DiscussionSystemTester {
           prompt: 'You are a brutally honest mentor who calls out BS and pushes for growth.',
           emoji: '🔥',
           color: '#FF0000',
-          style: 'BRUTAL_MENTOR',
+          style: 'TRUTH_TELLER',
           isPublic: false,
           createdBy: this.testUserId
         }
@@ -191,7 +191,7 @@ class DiscussionSystemTester {
           prompt: 'You challenge assumptions and question strategic viability.',
           emoji: '🎯',
           color: '#FF6B00',
-          style: 'STRATEGIC_CHALLENGER',
+          style: 'TRUTH_TELLER',
           isPublic: false,
           createdBy: this.testUserId
         }
@@ -234,7 +234,7 @@ class DiscussionSystemTester {
 
       const analysisResults = []
       for (const query of testQueries) {
-        const analysis = await enhancedSearch.analyzeQuery(query, this.testRoomId)
+        const analysis = await enhancedSearch.analyzeQuery(query, this.testRoomId, 'test-user')
         analysisResults.push({
           query,
           intent: analysis.intent,
@@ -370,7 +370,7 @@ class DiscussionSystemTester {
         hasMore: data.hasMore
       })
     } catch (error) {
-      this.addTestResult(testName, false, `Sequential discussion execution failed: ${error.message}`, Date.now() - startTime)
+      this.addTestResult(testName, false, `Sequential discussion execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`, Date.now() - startTime)
     }
   }
 
@@ -408,7 +408,7 @@ class DiscussionSystemTester {
 
       this.addTestResult(testName, true, 'All discussion control operations (pause/resume/stop) successful', Date.now() - startTime)
     } catch (error) {
-      this.addTestResult(testName, false, `Discussion control test failed: ${error.message}`, Date.now() - startTime)
+      this.addTestResult(testName, false, `Discussion control test failed: ${error instanceof Error ? error.message : 'Unknown error'}`, Date.now() - startTime)
     }
   }
 
@@ -483,12 +483,12 @@ class DiscussionSystemTester {
       const discussions = await prisma.discussion.findMany({
         where: {
           roomId: this.testRoomId,
-          messageId: messageWithMentions.data.id
+          messageId: messageWithMentions.data?.id
         }
       })
 
       this.addTestResult(testName, true, `Message integration successful. Auto-created discussions: ${discussions.length}`, Date.now() - startTime, {
-        messageId: messageWithMentions.data.id,
+        messageId: messageWithMentions.data?.id,
         autoCreatedDiscussions: discussions.length
       })
     } catch (error) {

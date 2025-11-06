@@ -4,6 +4,7 @@
  */
 
 import logger, { generateCorrelationId } from './logger'
+import { debugLog } from '@/lib/utils/debug-logger'
 
 interface ZAIMessage {
   role: "system" | "user" | "assistant" | "tool"
@@ -104,6 +105,8 @@ export class ZAIClient {
     const correlationId = generateCorrelationId()
     const startTime = Date.now()
 
+    debugLog('API', `Z.ai request sent (model: ${request.model || this.defaultModel})`)
+
     // Determine if using Anthropic-style endpoint (already includes full path)
     const isAnthropicStyle = this.baseURL.includes('/messages')
     const endpoint = isAnthropicStyle ? this.baseURL : `${this.baseURL}/chat/completions`
@@ -122,6 +125,12 @@ export class ZAIClient {
       top_p: request.top_p ?? 0.95,
       user_id: request.user_id,
       request_id: request.request_id,
+    }
+
+    // Debug log prompt content
+    const lastMessage = request.messages[request.messages.length - 1]
+    if (lastMessage) {
+      debugLog('API', `Prompt sent: "${lastMessage.content}"`)
     }
 
     // Log the request
@@ -208,6 +217,43 @@ export class ZAIClient {
       let parsedResponse: ZAIChatResponse
       try {
         parsedResponse = JSON.parse(responseText)
+
+        // Debug log successful response
+        const responseTime = Date.now() - startTime
+        const responseContent = parsedResponse.choices?.[0]?.message?.content ||
+                              parsedResponse.content?.[0]?.text ||
+                              'No content found'
+
+        debugLog('API', `Response received (${responseTime}ms)`)
+        debugLog('API', `Raw response: "${responseContent}"`)
+
+        // Enhanced language detection and analysis
+        const indonesianWords = ['kamu', 'anda', 'bukan', 'tidak', 'untuk', 'dengan', 'yang', 'dari', 'pada', 'kepada', 'dalam', 'ini', 'itu', 'tersebut', 'adalah', 'adalah', 'kami', 'mereka', 'kita', 'saya', 'aku', 'beliau', 'dia', 'mereka', 'apakah', 'bagaimana', 'mengapa', 'kapan', 'dimana', 'siapa', 'apa', 'bagi', 'tentang', 'mengenai', 'melalui', 'oleh', 'karena', 'sehingga', 'untuk', 'supaya', 'agar']
+        const englishWords = ['you', 'your', 'not', 'for', 'with', 'that', 'from', 'on', 'to', 'in', 'this', 'that', 'the', 'is', 'are', 'am', 'be', 'been', 'being', 'was', 'were', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'cannot', "can't", 'will', "won't", 'do', 'does', 'did', 'don', "don't", "doesn't", "didn't"]
+
+        const indonesianMatches = indonesianWords.filter(word => new RegExp(`\\b${word}\\b`, 'i').test(responseContent)).length
+        const englishMatches = englishWords.filter(word => new RegExp(`\\b${word}\\b`, 'i').test(responseContent)).length
+
+        const totalWords = responseContent.split(/\s+/).length
+        const indonesianPercentage = totalWords > 0 ? (indonesianMatches / totalWords * 100) : 0
+        const englishPercentage = totalWords > 0 ? (englishMatches / totalWords * 100) : 0
+
+        debugLog('LANGUAGE_ANALYSIS', `Language detection results:`, {
+          totalWords,
+          indonesianMatches,
+          englishMatches,
+          indonesianPercentage: indonesianPercentage.toFixed(1) + '%',
+          englishPercentage: englishPercentage.toFixed(1) + '%'
+        })
+
+        if (indonesianPercentage > englishPercentage && indonesianMatches > 0) {
+          debugLog('SUCCESS', `Response appears to be in Indonesian (${indonesianMatches} Indonesian words vs ${englishMatches} English words)`)
+        } else if (englishPercentage > indonesianPercentage && englishMatches > 0) {
+          debugLog('ISSUE', `Expected: Indonesian, Got: English (${englishMatches} English words vs ${indonesianMatches} Indonesian words)`)
+        } else {
+          debugLog('UNCERTAIN', `Language detection unclear (${indonesianMatches} Indonesian, ${englishMatches} English words)`)
+        }
+
       } catch (parseError) {
         const jsonError = new Error(`Failed to parse API response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
 
@@ -311,7 +357,6 @@ export class ZAIClient {
       let content: string
       let model: string
       let usage: any
-      let isFallback = false
 
       // Handle ZAI's new format with content array
       if (response.content && Array.isArray(response.content) && response.content.length > 0) {
@@ -337,7 +382,6 @@ export class ZAIClient {
           content = "I apologize, but I couldn't generate a proper response."
           model = "unknown"
           usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
-          isFallback = true
 
           logger.aiError(correlationId, 'Empty content array in ZAI response', new Error('No text content found in content array'), {
             response: {
@@ -368,7 +412,6 @@ export class ZAIClient {
         content = "I apologize, but I couldn't generate a proper response."
         model = "unknown"
         usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
-        isFallback = true
 
         logger.aiError(correlationId, 'Unexpected response format from API', new Error('Response format not recognized'), {
           response: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { storeConversationMessage } from '@/lib/vector-store'
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Test the vector storage with a test message
     const testMessageId = 'testmsg' + Date.now()

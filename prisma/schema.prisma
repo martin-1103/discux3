@@ -1,4 +1,3 @@
-// Discux3 Database Schema with NextAuth.js Integration
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["fullTextIndex", "fullTextSearch"]
@@ -8,10 +7,6 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
-
-// ============================================
-// NextAuth.js Required Models
-// ============================================
 
 model Account {
   id                String  @id @default(cuid())
@@ -26,10 +21,10 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId], map: "accounts_userId_fkey")
   @@map("accounts")
 }
 
@@ -40,36 +35,33 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId], map: "sessions_userId_fkey")
   @@map("sessions")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?   // For credentials authentication
-
-  // Discux3 specific fields
-  avatarUrl            String?      @map("avatar_url")
-  subscription         Subscription @default(FREE)
-  maxAgents            Int          @default(3) @map("max_agents")
-  maxRooms             Int          @default(1) @map("max_rooms")
-  maxMessagesPerMonth  Int          @default(100) @map("max_messages_per_month")
-  lastActive           DateTime     @default(now()) @updatedAt @map("last_active")
-  createdAt            DateTime     @default(now()) @map("created_at")
-  updatedAt            DateTime     @updatedAt @map("updated_at")
-
-  // Relations
-  accounts         Account[]
-  sessions         Session[]
-  agents           Agent[]
-  rooms            Room[]
-  roomParticipants RoomParticipant[]
-  messages         Message[]
-  invitations      RoomInvitation[]
-  roomAgents       RoomAgent[]
+  id                  String            @id @default(cuid())
+  name                String?
+  email               String?           @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  avatarUrl           String?           @map("avatar_url")
+  subscription        Subscription      @default(FREE)
+  maxAgents           Int               @default(3) @map("max_agents")
+  maxRooms            Int               @default(1) @map("max_rooms")
+  maxMessagesPerMonth Int               @default(100) @map("max_messages_per_month")
+  lastActive          DateTime          @default(now()) @updatedAt @map("last_active")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  accounts            Account[]
+  agents              Agent[]
+  messages            Message[]
+  roomAgents          RoomAgent[]
+  invitations         RoomInvitation[]
+  roomParticipants    RoomParticipant[]
+  rooms               Room[]
+  sessions            Session[]
 
   @@map("users")
 }
@@ -83,29 +75,23 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// ============================================
-// Discux3 Application Models
-// ============================================
-
 model Agent {
-  id         String     @id @default(cuid())
-  name       String     @db.VarChar(100)
-  prompt     String     @db.Text
-  emoji      String     @default("🤖") @db.VarChar(2)
-  color      String     @default("#3B82F6") @db.VarChar(7)
-  style      AgentStyle @default(TRUTH_TELLER)
-  isPublic   Boolean    @default(false) @map("is_public")
-  usageCount Int        @default(0) @map("usage_count")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-
-  createdBy String @map("created_by")
-  creator   User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-
-  roomAgents       RoomAgent[]
-  mentions         MessageMention[]
+  id                  String               @id @default(cuid())
+  name                String               @db.VarChar(100)
+  prompt              String               @db.Text
+  emoji               String               @default("?") @db.VarChar(2)
+  color               String               @default("#3B82F6") @db.VarChar(7)
+  style               AgentStyle           @default(TRUTH_TELLER)
+  isPublic            Boolean              @default(false) @map("is_public")
+  usageCount          Int                  @default(0) @map("usage_count")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  createdBy           String               @map("created_by")
+  creator             User                 @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   discussionResponses DiscussionResponse[]
-  messages         Message[]
+  mentions            MessageMention[]
+  messages            Message[]
+  roomAgents          RoomAgent[]
 
   @@index([createdBy])
   @@index([style])
@@ -114,22 +100,20 @@ model Agent {
 }
 
 model Room {
-  id          String   @id @default(cuid())
-  name        String   @db.VarChar(200)
-  description String?  @db.Text
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  createdBy String @map("created_by")
-  creator   User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-
-  settings     RoomSettings?
-  participants RoomParticipant[]
-  agents       RoomAgent[]
-  messages     Message[]
-  invitations  RoomInvitation[]
+  id           String            @id @default(cuid())
+  name         String            @db.VarChar(200)
+  description  String?           @db.Text
+  isActive     Boolean           @default(true) @map("is_active")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  createdBy    String            @map("created_by")
   discussions  Discussion[]
+  messages     Message[]
+  agents       RoomAgent[]
+  invitations  RoomInvitation[]
+  participants RoomParticipant[]
+  settings     RoomSettings?
+  creator      User              @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([createdBy])
   @@index([isActive])
@@ -142,8 +126,7 @@ model RoomSettings {
   maxAgents          Int     @default(5) @map("max_agents")
   allowAgentCreation Boolean @default(true) @map("allow_agent_creation")
   autoSummarize      Boolean @default(false) @map("auto_summarize")
-
-  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  room               Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@map("room_settings")
 }
@@ -154,9 +137,8 @@ model RoomParticipant {
   userId   String   @map("user_id")
   role     RoomRole @default(MEMBER)
   joinedAt DateTime @default(now()) @map("joined_at")
-
-  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([roomId])
@@ -170,35 +152,34 @@ model RoomAgent {
   agentId String   @map("agent_id")
   addedBy String   @map("added_by")
   addedAt DateTime @default(now()) @map("added_at")
-
-  room  Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [addedBy], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [addedBy], references: [id], onDelete: Cascade)
+  agent   Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  room    Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, agentId])
   @@index([roomId])
   @@index([agentId])
+  @@index([addedBy], map: "room_agents_added_by_fkey")
   @@map("room_agents")
 }
 
 model Message {
-  id               String      @id @default(cuid())
-  roomId           String      @map("room_id")
-  content          String      @db.Text
-  type             MessageType
-  senderId         String?     @map("sender_id") // Optional for agent messages
-  agentId          String?     @map("agent_id")  // New field for agent messages
-  processingTime   Decimal?    @map("processing_time") @db.Decimal(10, 3)
-  agentConfidence  Decimal?    @map("agent_confidence") @db.Decimal(3, 2)
-  contextLength    Int?        @map("context_length")
-  timestamp        DateTime    @default(now())
-
-  room       Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender     User?                 @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  agent      Agent?                @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  mentions   MessageMention[]
+  id                  String               @id @default(cuid())
+  roomId              String               @map("room_id")
+  content             String               @db.Text
+  type                MessageType
+  senderId            String?              @map("sender_id")
+  processingTime      Decimal?             @map("processing_time") @db.Decimal(10, 3)
+  agentConfidence     Decimal?             @map("agent_confidence") @db.Decimal(3, 2)
+  contextLength       Int?                 @map("context_length")
+  timestamp           DateTime             @default(now())
+  agentId             String?              @map("agent_id")
   discussionResponses DiscussionResponse[]
-  discussions Discussion[]
+  discussions         Discussion[]
+  mentions            MessageMention[]
+  agent               Agent?               @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  room                Room                 @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender              User?                @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([roomId, timestamp])
   @@index([senderId])
@@ -209,12 +190,11 @@ model Message {
 }
 
 model MessageMention {
-  id               String @id @default(cuid())
-  messageId        String @map("message_id")
-  mentionedAgentId String @map("mentioned_agent_id")
-
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  agent   Agent   @relation(fields: [mentionedAgentId], references: [id], onDelete: Cascade)
+  id               String  @id @default(cuid())
+  messageId        String  @map("message_id")
+  mentionedAgentId String  @map("mentioned_agent_id")
+  agent            Agent   @relation(fields: [mentionedAgentId], references: [id], onDelete: Cascade)
+  message          Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
   @@index([mentionedAgentId])
@@ -222,22 +202,21 @@ model MessageMention {
 }
 
 model Discussion {
-  id          String            @id @default(cuid())
-  roomId      String            @map("room_id")
-  messageId   String            @map("message_id") // Initial user message that started discussion
-  status      DiscussionStatus  @default(ACTIVE)
-  topic       String?           @db.Text
-  turnOrder   String            @db.Text // JSON string of agent IDs in order
-  currentTurn Int               @default(0)
-  maxTurns    Int               @default(10) // Prevent infinite discussions
-  intensity   DiscussionIntensity @default(NORMAL)
-  metadata    Json?             // Discussion settings and context
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-
-  room     Room                @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  message  Message             @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  responses DiscussionResponse[]
+  id          String               @id @default(cuid())
+  roomId      String               @map("room_id")
+  messageId   String               @map("message_id")
+  status      DiscussionStatus     @default(ACTIVE)
+  topic       String?              @db.Text
+  turnOrder   String               @db.Text
+  currentTurn Int                  @default(0)
+  maxTurns    Int                  @default(10)
+  intensity   DiscussionIntensity  @default(NORMAL)
+  metadata    String?              @db.LongText
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  responses   DiscussionResponse[]
+  message     Message              @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  room        Room                 @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@index([roomId])
   @@index([status])
@@ -246,18 +225,17 @@ model Discussion {
 }
 
 model DiscussionResponse {
-  id           String   @id @default(cuid())
-  discussionId String   @map("discussion_id")
-  agentId      String   @map("agent_id")
-  messageId    String   @map("message_id")
+  id           String     @id @default(cuid())
+  discussionId String     @map("discussion_id")
+  agentId      String     @map("agent_id")
+  messageId    String     @map("message_id")
   turnOrder    Int
-  respondingTo String?  @map("responding_to") // Previous agent ID if responding to another agent
-  responseTo   String?  @map("response_to")   // Previous message ID this is responding to
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  message    Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  respondingTo String?    @map("responding_to")
+  responseTo   String?    @map("response_to")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  agent        Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  message      Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([discussionId])
   @@index([agentId])
@@ -274,19 +252,26 @@ model RoomInvitation {
   expiresAt   DateTime? @map("expires_at")
   usedAt      DateTime? @map("used_at")
   createdAt   DateTime  @default(now()) @map("created_at")
-
-  room    Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  inviter User @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  inviter     User      @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@index([roomId])
   @@index([inviteToken])
   @@index([expiresAt])
+  @@index([invitedBy], map: "room_invitations_invited_by_fkey")
   @@map("room_invitations")
 }
 
-// ============================================
-// Enums
-// ============================================
+model VectorIdMapping {
+  id         String   @id @default(cuid())
+  cuidId     String   @unique @map("cuid_id")
+  qdrantUuid String   @unique @map("qdrant_uuid")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([cuidId])
+  @@index([qdrantUuid])
+  @@map("vector_id_mappings")
+}
 
 enum AgentStyle {
   TRUTH_TELLER
@@ -322,19 +307,4 @@ enum DiscussionIntensity {
   BRUTAL
   INTENSE
   EXTREME
-}
-
-// ============================================
-// Vector Database ID Mapping
-// ============================================
-
-model VectorIdMapping {
-  id           String   @id @default(cuid())
-  cuidId       String   @unique @map("cuid_id") // Original application ID (cuid2)
-  qdrantUuid   String   @unique @map("qdrant_uuid") // Qdrant-compatible UUID
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  @@index([cuidId])
-  @@index([qdrantUuid])
-  @@map("vector_id_mappings")
 }

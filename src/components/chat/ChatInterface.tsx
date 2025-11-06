@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getMessages, createMessage, createAgentMessage } from "@/lib/actions/messages"
+import { getMessages, createMessage } from "@/lib/actions/messages"
 import { generateBatchAgentResponses } from "@/lib/actions/ai"
 import { ClearHistoryButton } from "./ClearHistoryButton"
 import { getUserRoleInRoom } from "@/lib/actions/rooms"
@@ -25,7 +25,7 @@ interface Message {
     name: string | null
     email: string | null
     image: string | null
-  }
+  } | null
   mentions: Array<{
     agent: {
       id: string
@@ -92,7 +92,7 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
   const inputRef = useRef<HTMLInputElement>(null)
 
   // WebSocket integration
-  const { socket, isConnected, joinRoom, sendMessage } = useSocket({
+  const { isConnected, joinRoom } = useSocket({
     userId: currentUserId,
     userName: currentUserName || undefined
   })
@@ -105,7 +105,12 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     try {
       const result = await getMessages(roomId, currentUserId)
       if (result.success && result.data) {
-        setMessages(result.data)
+        // Filter out messages with null senders ONLY for USER messages
+        // Keep AGENT messages even if sender is null (agents are not users)
+        const safeMessages = result.data.filter(msg =>
+          msg.type === 'AGENT' || msg.sender !== null
+        )
+        setMessages(safeMessages)
       }
     } catch (error) {
       console.error("Failed to load messages:", error)
@@ -133,23 +138,55 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     }
   }, [isConnected, roomId, joinRoom])
 
-  // Listen for real-time message updates via WebSocket
-  useEffect(() => {
-    const handleNewMessage = (event: CustomEvent) => {
-      const message = event.detail
-      console.log(`[ChatInterface] Received new message via WebSocket:`, message)
-      console.log(`[ChatInterface] Message type:`, message.type, `Message id:`, message.id)
+  // Memoized event handlers to prevent duplicate listeners
+  const handleNewMessage = useCallback((event: any) => {
+    const message = event.detail
+    console.log(`[ChatInterface] === WebSocket MESSAGE RECEIVED ===`)
+    console.log(`[ChatInterface] Message type:`, message.type, `Message id:`, message.id)
+    console.log(`[ChatInterface] Full message object:`, JSON.stringify(message, null, 2))
+    console.log(`[ChatInterface] Message sender:`, message.data?.sender)
+    console.log(`[ChatInterface] Message data keys:`, message.data ? Object.keys(message.data) : 'no data')
 
-      setMessages(prev => {
-        // Check if message already exists to avoid duplicates
-        if (prev.some(msg => msg.id === message.id)) {
-          return prev
-        }
-        return [...prev, message]
+    setMessages(prev => {
+      // Extract the actual message ID from various possible locations
+      const messageId = message.data?.id || message.id || `temp-${Date.now()}`
+
+      // STRICT duplicate check - only check by exact message ID
+      const isDuplicate = prev.some(existingMsg => {
+        return existingMsg.id === messageId
       })
-    }
 
-    const handleAgentTyping = (event: CustomEvent) => {
+      if (isDuplicate) {
+        console.log(`[ChatInterface] Duplicate message detected, skipping:`, messageId)
+        return prev
+      }
+
+      // Transform the message to ensure proper sender information for UI
+      let transformedMessage = {
+        ...message.data,
+        id: messageId,
+        timestamp: message.data?.timestamp || new Date()
+      }
+
+      if (message.data.type === 'AGENT' && message.data.agent) {
+        // For agent messages, construct sender from agent data
+        transformedMessage.sender = {
+          id: message.data.agentId,
+          name: message.data.agent.name,
+          email: null
+        }
+        console.log(`[ChatInterface] Transformed agent message sender:`, transformedMessage.sender)
+      } else if (message.data.sender) {
+        // For regular user messages, use existing sender
+        console.log(`[ChatInterface] Using existing sender:`, message.data.sender)
+      }
+
+      console.log(`[ChatInterface] Adding new message to state:`, messageId)
+      return [...prev, transformedMessage]
+    })
+  }, [])
+
+    const handleAgentTyping = useCallback((event: any) => {
       const typingData = event.detail
       console.log(`[ChatInterface] Agent typing:`, typingData)
 
@@ -158,9 +195,9 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       } else {
         setIsTyping(prev => prev.filter(id => id !== typingData.agentId))
       }
-    }
+    }, [])
 
-    const handleDiscussionUpdate = (event: CustomEvent) => {
+    const handleDiscussionUpdate = useCallback((event: any) => {
       const update = event.detail
       console.log(`[ChatInterface] Discussion update:`, update)
 
@@ -187,9 +224,9 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
         })
         setIsTyping([])
       }
-    }
+    }, [])
 
-    const handleAgentProgress = (event: CustomEvent) => {
+    const handleAgentProgress = useCallback((event: any) => {
       const progress = event.detail
       console.log(`[ChatInterface] Agent progress:`, progress)
 
@@ -217,11 +254,9 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
           currentAgent: null
         }))
 
-        // Remove from typing and load new messages
+        // Remove from typing - agent message should arrive via WebSocket
         setIsTyping(prev => prev.filter(id => id !== progress.agentId))
-
-        // Load updated messages to get the agent response
-        loadMessages()
+        console.log(`[ChatInterface] Agent ${progress.agentName} completed - expecting message via WebSocket`)
       } else if (progress.type === 'agent_error') {
         console.error(`[ChatInterface] Agent ${progress.agentName} encountered an error:`, progress.errorMessage)
 
@@ -248,7 +283,11 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
           })
         }, 2000) // Brief pause to show completion
       }
-    }
+    }, [])
+
+  // Listen for real-time message updates via WebSocket
+  useEffect(() => {
+    console.log('[ChatInterface] Setting up WebSocket event listeners for room:', roomId)
 
     // Add event listeners
     window.addEventListener('socket:new_message', handleNewMessage as EventListener)
@@ -260,12 +299,13 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     loadMessages()
 
     return () => {
+      console.log('[ChatInterface] Cleaning up WebSocket event listeners for room:', roomId)
       window.removeEventListener('socket:new_message', handleNewMessage as EventListener)
       window.removeEventListener('socket:agent_typing', handleAgentTyping as EventListener)
       window.removeEventListener('socket:discussion_update', handleDiscussionUpdate as EventListener)
       window.removeEventListener('socket:agent_progress', handleAgentProgress as EventListener)
     }
-  }, [loadMessages, roomId])
+  }, [roomId, handleNewMessage, handleAgentTyping, handleDiscussionUpdate, handleAgentProgress])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -288,9 +328,8 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       })
 
       if (result.success && result.data) {
-        // Add message to local state
-        setMessages(prev => [...prev, result.data as Message])
-        
+        setMessages(prev => [...prev, result.data])
+
         // Check for agent mentions and generate responses
         await handleAgentMentions(result.data)
       }
@@ -331,9 +370,8 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
         currentUserId
       )
 
-      if (response.success) {
-        console.log(`[ChatInterface] Discussion initiated. Real-time updates will follow via WebSocket.`)
-      } else {
+      // Type guard for success/error discrimination
+      if ('error' in response) {
         console.error(`[ChatInterface] Failed to initiate discussion:`, response.error)
 
         // Reset state on failure
@@ -345,6 +383,8 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
           agentOrder: []
         })
         setIsTyping([])
+      } else if (response.success) {
+        console.log(`[ChatInterface] Discussion initiated. Real-time updates will follow via WebSocket.`)
       }
     } catch (error) {
       console.error("Failed to generate agent responses:", error)
@@ -361,45 +401,45 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     }
   }
 
-  const generateMockResponse = (agent: any, userMessage: string) => {
-    const responses = {
-      PROFESSIONAL: [
-        "Based on my analysis, I recommend a structured approach to this challenge. Let's break down the key components and develop a comprehensive strategy.",
-        "This is an interesting challenge. From a professional standpoint, I suggest we consider the following factors...",
-        "I appreciate your question. Let me provide a thorough assessment based on best practices in this area."
-      ],
-      DIRECT: [
-        "Here's what you need to do: Focus on the core issue and take immediate action.",
-        "Bottom line: Address this directly without overcomplicating the solution.",
-        "My advice: Be decisive and implement a straightforward solution."
-      ],
-      FRIENDLY: [
-        "Great question! I'm here to help you work through this. Let's explore some ideas together! 😊",
-        "I love that you're thinking about this! Here are some friendly suggestions...",
-        "Absolutely! Let me share some thoughts that might help you on your journey."
-      ],
-      CREATIVE: [
-        "Ooh, this sparks some innovative ideas! What if we approached this from a completely different angle?",
-        "Let's think outside the box here! I'm imagining some creative possibilities...",
-        "This is a canvas for innovation! Here are some unconventional approaches..."
-      ],
-      ANALYTICAL: [
-        "Let me analyze this systematically. The data suggests several key factors to consider...",
-        "From an analytical perspective, we should examine the underlying patterns and metrics.",
-        "Breaking this down logically, we can identify several critical variables and relationships."
-      ]
-    }
-
-    const agentResponses = responses[agent.style as keyof typeof responses] || responses.PROFESSIONAL
-    const randomResponse = agentResponses[Math.floor(Math.random() * agentResponses.length)]
-
-    return {
-      content: `@${agent.name}: ${randomResponse}`,
-      processingTime: 1.5 + Math.random() * 2,
-      confidence: 0.85 + Math.random() * 0.14,
-      contextLength: userMessage.length + Math.floor(Math.random() * 1000)
-    }
-  }
+  // const generateMockResponse = (agent: any, userMessage: string) => {
+  //   const responses = {
+  //     PROFESSIONAL: [
+  //       "Based on my analysis, I recommend a structured approach to this challenge. Let's break down the key components and develop a comprehensive strategy.",
+  //       "This is an interesting challenge. From a professional standpoint, I suggest we consider the following factors...",
+  //       "I appreciate your question. Let me provide a thorough assessment based on best practices in this area."
+  //     ],
+  //     DIRECT: [
+  //       "Here's what you need to do: Focus on the core issue and take immediate action.",
+  //       "Bottom line: Address this directly without overcomplicating the solution.",
+  //       "My advice: Be decisive and implement a straightforward solution."
+  //     ],
+  //     FRIENDLY: [
+  //       "Great question! I'm here to help you work through this. Let's explore some ideas together! 😊",
+  //       "I love that you're thinking about this! Here are some friendly suggestions...",
+  //       "Absolutely! Let me share some thoughts that might help you on your journey."
+  //     ],
+  //     CREATIVE: [
+  //       "Ooh, this sparks some innovative ideas! What if we approached this from a completely different angle?",
+  //       "Let's think outside the box here! I'm imagining some creative possibilities...",
+  //       "This is a canvas for innovation! Here are some unconventional approaches..."
+  //     ],
+  //     ANALYTICAL: [
+  //       "Let me analyze this systematically. The data suggests several key factors to consider...",
+  //       "From an analytical perspective, we should examine the underlying patterns and metrics.",
+  //       "Breaking this down logically, we can identify several critical variables and relationships."
+  //     ]
+  //   }
+  //
+  //   const agentResponses = responses[agent.style as keyof typeof responses] || responses.PROFESSIONAL
+  //   const randomResponse = agentResponses[Math.floor(Math.random() * agentResponses.length)]
+  //
+  //   return {
+  //     content: `@${agent.name}: ${randomResponse}`,
+  //     processingTime: 1.5 + Math.random() * 2,
+  //     confidence: 0.85 + Math.random() * 0.14,
+  //     contextLength: userMessage.length + Math.floor(Math.random() * 1000)
+  //   }
+  // }
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString([], {
@@ -436,13 +476,15 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     let formattedContent = content
 
     // Replace @mentions with styled versions
-    mentions.forEach(mention => {
-      const mentionRegex = new RegExp(`@${mention.agent.name}`, 'g')
-      formattedContent = formattedContent.replace(
-        mentionRegex,
-        `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium" style="background-color: ${mention.agent.color}20; color: ${mention.agent.color}">@${mention.agent.name}</span>`
-      )
-    })
+    if (mentions && mentions.length > 0) {
+      mentions.forEach(mention => {
+        const mentionRegex = new RegExp(`@${mention.agent.name}`, 'g')
+        formattedContent = formattedContent.replace(
+          mentionRegex,
+          `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium" style="background-color: ${mention.agent.color}20; color: ${mention.agent.color}">@${mention.agent.name}</span>`
+        )
+      })
+    }
 
     return formattedContent
   }
@@ -502,7 +544,7 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
             .map((roomAgent) => {
               const isCompleted = discussionState.completedAgents.includes(roomAgent.agent.id)
               const isCurrent = discussionState.currentAgent === roomAgent.agent.name
-              const isPending = !isCompleted && !isCurrent
+              // const isPending = !isCompleted && !isCurrent
 
               return (
                 <div
@@ -592,8 +634,8 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className={message.type === "AGENT" ? "text-lg" : ""}>
                     {message.type === "AGENT" ? (agentInfo?.emoji || "🤖") :
-                     message.sender.name?.[0] ||
-                     message.sender.email?.[0] || "U"}
+                     message.sender?.name?.[0] ||
+                     message.sender?.email?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
 
@@ -608,7 +650,7 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
                           </span>
                         ) : "AI Agent"
                       ) : (
-                        message.sender.name || message.sender.email
+                        message.sender?.name || message.sender?.email || "Unknown User"
                       )}
                     </span>
                     {message.type === "AGENT" && (
@@ -743,3 +785,5 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
     </div>
   )
 }
+
+export default ChatInterface

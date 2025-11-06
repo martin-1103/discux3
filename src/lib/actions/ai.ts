@@ -6,6 +6,18 @@ import { createAgentMessage } from "./messages"
 import { getConversationContext, getVectorStore, storeConversationMessage } from "../vector-store"
 import logger from "@/lib/logger"
 import { generateCorrelationId } from "@/lib/logger"
+import { debugLog } from "@/lib/utils/debug-logger"
+
+// Truth Teller Enhancement - ensure Indonesian language compliance for all agents
+const TRUTH_TELLER_ENHANCEMENT = `
+Communication Style:
+- Berbahasa Indonesia dalam semua response
+- Singkat, padat, jelas, to the point
+- Tidak bertele-tele kecuali user minta detail
+- Brutally honest, no sugar-coating
+- Langsung ke inti masalah
+- Focus pada solusi yang actionable
+`
 
 /**
  * Clean message content by removing agent metadata
@@ -87,15 +99,27 @@ export async function generateAgentResponse(
       searchDuration: Date.now() - startTime
     })
 
-    // Build enhanced prompt with context
-    let enhancedPrompt = agent.prompt
+    // Build enhanced prompt with context and Indonesian language enhancement
+    debugLog('AI', `Building prompt for agent: ${agent.name}`)
+
+    // Use agent's base prompt from database
+    let basePrompt = agent.prompt
+    debugLog('AI', `Base prompt: "${basePrompt}"`)
+    debugLog('AI', `Base prompt length: ${basePrompt.length} chars`)
+
+    // Apply truth teller enhancement for all agents
+    basePrompt += "\n\n" + TRUTH_TELLER_ENHANCEMENT
+    debugLog('AI', `Adding Indonesian language enhancement: "${TRUTH_TELLER_ENHANCEMENT}"`)
+    debugLog('AI', `Final prompt with enhancement length: ${basePrompt.length} chars`)
+
+    let enhancedPrompt = basePrompt
 
     if (relevantContext.length > 0) {
       const contextLines = relevantContext.map((ctx: any) =>
         `[${new Date(ctx.timestamp).toLocaleTimeString()}] ${ctx.author_name}: ${cleanMessageContent(ctx.content)}`
       ).join('\n')
 
-      enhancedPrompt = `${agent.prompt}
+      enhancedPrompt = `${basePrompt}
 
 Recent conversation in this room:
 ${contextLines}
@@ -104,6 +128,17 @@ Current message: ${currentUser?.name || "Anonymous"}: ${userMessage}
 
 Please respond considering who is asking and the conversation flow.`
     }
+
+    debugLog('AI', `Final complete prompt for ${agent.name}:`, {
+      totalLength: enhancedPrompt.length,
+      hasIndonesianInstruction: enhancedPrompt.includes('Berbahasa Indonesia'),
+      contextSections: {
+        basePrompt: basePrompt.length,
+        contextLines: relevantContext.length > 0 ? contextLines.length : 0,
+        userMessage: userMessage.length
+      }
+    })
+    debugLog('AI', `Full prompt content: "${enhancedPrompt}"`)
 
     // Generate response using Z.ai with enhanced prompt
     const zaiClient = getZAIClient()

@@ -368,10 +368,31 @@ export async function storeConversationMessage(
   await store.storeMessage(vectorMessage)
 }
 
+/**
+ * Check if input is mention-only (e.g., "@all" or "@agentname")
+ */
+export function isMentionOnly(input: string): boolean {
+  const trimmed = input.trim()
+  const mentionPattern = /^@[\w\s]+$/
+  return mentionPattern.test(trimmed)
+}
+
+/**
+ * Extract mentioned agents from input
+ */
+export function extractMentions(input: string): string[] {
+  const mentionPattern = /@(\w+)/g
+  const matches = input.match(mentionPattern)
+  if (!matches) return []
+
+  return matches.map(mention => mention.substring(1).toLowerCase())
+}
+
 export async function getConversationContext(
   roomId: string,
   query: string,
-  limit?: number
+  limit?: number,
+  _userId?: string
 ): Promise<SearchResult[]> {
   const store = getVectorStore()
 

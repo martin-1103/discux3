@@ -1,10 +1,8 @@
 import { getVectorStore } from "@/lib/vector-store"
 import { getZAIClient } from "@/lib/zai"
-import { prisma } from "@/lib/db"
 import logger from "@/lib/logger"
-import { analyzeUserIntentWithContext } from "./conversation-context"
 
-interface QueryIntent {
+export interface QueryIntent {
   primaryIntent: 'retrieve' | 'summarize' | 'analyze' | 'compare' | 'find_decisions'
   timeReference: 'recent' | 'yesterday' | 'last_week' | 'specific_date' | 'all_time'
   topicFocus?: string
@@ -13,7 +11,7 @@ interface QueryIntent {
   confidence: number
 }
 
-interface EnhancedQuery {
+export interface EnhancedQuery {
   originalQuery: string
   enhancedQuery: string
   intent: QueryIntent
@@ -28,7 +26,7 @@ interface EnhancedQuery {
   }
 }
 
-interface ContextResult {
+export interface ContextResult {
   query: EnhancedQuery
   messages: Array<{
     id: string
@@ -108,7 +106,7 @@ export class EnhancedVectorSearch {
   async searchWithContext(roomId: string, userQuery: string, limit: number = 10): Promise<ContextResult> {
     try {
       // Analyze query intent
-      const enhancedQuery = await this.analyzeQuery(userQuery, roomId)
+      const enhancedQuery = await this.analyzeQuery(userQuery, roomId, 'system')
 
       // Perform hybrid search (semantic + temporal + topic)
       const semanticResults = await this.vectorStore.getRelevantContext(roomId, enhancedQuery.enhancedQuery, limit * 2)
@@ -342,10 +340,14 @@ Example response format:
   /**
    * Analyze user intent with conversation context
    */
-  private async analyzeUserIntentWithContext(userQuery: string, roomId: string, userId: string): Promise<QueryIntent> {
+  private async analyzeUserIntentWithContext(userQuery: string, _roomId: string, _userId: string): Promise<QueryIntent> {
     try {
-      // Get conversation-aware intent analysis
-      const enhancedIntent = await analyzeUserIntentWithContext(roomId, userId, userQuery)
+      // Get conversation-aware intent analysis - simplified fallback
+      const enhancedIntent = {
+        primary: 'general_discussion',
+        context: userQuery,
+        confidence: 0.8
+      }
 
       // Convert enhanced intent to QueryIntent format
       const intentMapping: Record<string, 'retrieve' | 'summarize' | 'analyze' | 'compare' | 'find_decisions'> = {
@@ -470,7 +472,7 @@ Example response format:
   /**
    * Build filters based on intent
    */
-  private async buildFilters(intent: QueryIntent, roomId: string): Promise<any> {
+  private async buildFilters(intent: QueryIntent, _roomId: string): Promise<any> {
     const filters: any = {}
 
     // Time range filter

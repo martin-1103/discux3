@@ -4,12 +4,14 @@ import "./globals.css"
 import { SessionProvider } from "@/components/auth/SessionProvider"
 import { Navigation } from "@/components/Navigation"
 
-// Initialize logging system at app startup
-import '@/lib/console-logger'
-import '@/lib/prisma-error-logger'
+// Initialize logger first (no circular dependencies)
 import logger from '@/lib/logger'
 
-// Log app initialization
+// Initialize console logging after logger to avoid circular dependency
+import '@/lib/console-logger'
+import '@/lib/prisma-error-logger'
+
+// Log app initialization after logger is ready
 logger.info('🚀 Discux3 application starting', {
   timestamp: new Date().toISOString(),
   nodeEnv: process.env.NODE_ENV || 'development',

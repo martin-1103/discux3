@@ -10,6 +10,7 @@ import { storeConversationMessage } from "../vector-store"
 import { incrementAgentUsage } from "./agents"
 import { generateAgentResponse } from "./ai"
 import { getVectorStore } from "../vector-store"
+import { debugLog } from "@/lib/utils/debug-logger"
 
 /**
  * Get messages for a room
@@ -129,7 +130,13 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
     }
 
     // Extract agent mentions from message content
+    debugLog('START', `User message: "${validatedData.content}"`)
+    console.log('[Messages] Extracting agent mentions from content:', validatedData.content)
+    console.log('[Messages] Available agents in room:', room.agents.map(ra => ({ id: ra.agent.id, name: ra.agent.name })))
+
     const agentMentions = extractAgentMentions(validatedData.content, room.agents)
+    console.log('[Messages] Extracted agent mentions:', agentMentions)
+    debugLog('DETECT', `Agents found: ${agentMentions.length} mentions`, agentMentions)
 
     // Create message with mentions
     const message = await prisma.$transaction(async (tx) => {
@@ -208,7 +215,8 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
 
     // Trigger agent responses asynchronously (server-side)
     if (agentMentions.length > 0) {
-      
+      console.log('[Messages] Triggering agent responses for mentions:', agentMentions)
+
       // Check if this should be a discussion (multiple agents or explicit discussion command)
       const isDiscussionMode = agentMentions.length >= 2 ||
         validatedData.content.toLowerCase().includes('discuss') ||
@@ -231,13 +239,13 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
             intensity
           )
 
-          if (discussionResult.success) {
-          
+          if (discussionResult.success && discussionResult.data) {
+
             // Execute discussion asynchronously
             const { executeDiscussion } = await import("@/lib/services/discussion-orchestrator")
             executeDiscussion(
               discussionResult.data.id,
-              validatedData.senderId,
+              userId,
               message.sender?.name || "User"
             ).catch(error => {
               console.error("[Messages] Failed to execute discussion:", error)
@@ -246,12 +254,49 @@ export async function createMessage(userId: string, data: CreateMessageInput) {
         } catch (error) {
           console.error("[Messages] Failed to create discussion:", error)
           // Fallback to individual agent responses
-          triggerIndividualAgentResponses(agentMentions, validatedData, message)
+          triggerIndividualAgentResponses(agentMentions, validatedData, message, userId)
         }
       } else {
         // Individual agent responses (existing behavior)
-        triggerIndividualAgentResponses(agentMentions, validatedData, message)
+        console.log('[Messages] Triggering individual agent responses')
+        triggerIndividualAgentResponses(agentMentions, validatedData, message, userId)
       }
+    }
+
+    // Emit WebSocket event for real-time updates for user message
+    try {
+      // Try ServiceRegistry first, then fallback to direct import
+      const { ServiceRegistry } = await import("@/lib/services/service-registry")
+      const { getSocketService } = await import("@/lib/services/socket-service")
+
+      console.log(`[Messages] ServiceRegistry imported successfully for user message`)
+      let socketService = ServiceRegistry.getSocketService()
+
+      if (!socketService) {
+        console.log(`[Messages] ServiceRegistry returned null for user message, trying direct import`)
+        socketService = getSocketService()
+      }
+
+      console.log(`[Messages] Socket service resolved for user message:`, socketService ? 'SocketService instance' : 'null')
+
+      if (socketService) {
+        // Send the user message object directly, not wrapped in 'data'
+        const socketMessage = {
+          id: serializedMessage.id,
+          type: 'message' as const,
+          roomId: validatedData.roomId,
+          userId: serializedMessage.senderId || userId,
+          data: serializedMessage,
+          timestamp: serializedMessage.timestamp || new Date()
+        }
+
+        socketService.broadcastMessage(validatedData.roomId, socketMessage)
+        console.log(`[Messages] WebSocket event sent for user message: ${serializedMessage.sender?.name || 'Unknown User'}`)
+        console.log(`[Messages] User Message ID: ${serializedMessage.id}, Content preview: ${serializedMessage.content?.substring(0, 50)}...`)
+      }
+    } catch (socketError) {
+      console.error("[Messages] Failed to send WebSocket event for user message:", socketError)
+      // Don't fail the operation if WebSocket fails
     }
 
     revalidatePath(`/rooms/${validatedData.roomId}/chat`)
@@ -277,6 +322,8 @@ export async function createAgentMessage(
   contextLength?: number
 ) {
   try {
+    debugLog('AGENT_CREATE', `Creating agent message for ${agentId}`)
+
     // Get agent information
     const agent = await prisma.agent.findUnique({
       where: { id: agentId },
@@ -284,11 +331,16 @@ export async function createAgentMessage(
     })
 
     if (!agent) {
+      debugLog('AGENT_ERROR', `Agent not found: ${agentId}`)
       return { success: false, error: "Agent not found" }
     }
 
+    debugLog('AGENT_INFO', `Agent found: ${agent.name} (${agent.emoji})`, { agentId, processingTime, agentConfidence, contextLength })
+
     // Prepend agent info to content for parsing in the frontend
     const contentWithAgentInfo = `[AGENT:${agentId}:${agent.name}:${agent.emoji}:${agent.color}:${agent.style}]\n${content}`
+
+    debugLog('AGENT_RESPONSE', `Agent response: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`)
 
     // Create message as agent
     const message = await prisma.message.create({
@@ -352,27 +404,48 @@ export async function createAgentMessage(
 
     // Emit WebSocket event for real-time updates
     try {
+      // Try ServiceRegistry first, then fallback to direct import
+      const { ServiceRegistry } = await import("@/lib/services/service-registry")
       const { getSocketService } = await import("@/lib/services/socket-service")
-      const socketService = getSocketService()
+
+      console.log(`[Messages] ServiceRegistry imported successfully`)
+      let socketService = ServiceRegistry.getSocketService()
+
+      if (!socketService) {
+        console.log(`[Messages] ServiceRegistry returned null, trying direct import`)
+        socketService = getSocketService()
+      }
+
+      console.log(`[Messages] Socket service resolved:`, socketService ? 'SocketService instance' : 'null')
 
       if (socketService) {
         // Send the actual message object directly, not wrapped in 'data'
         const socketMessage = {
-          ...serializedMessage,
+          id: serializedMessage.id,
+          type: 'message' as const,
+          roomId: roomId,
+          userId: serializedMessage.senderId || 'system',
+          data: serializedMessage,
           timestamp: serializedMessage.timestamp || new Date()
         }
 
         socketService.broadcastMessage(roomId, socketMessage)
         console.log(`[Messages] WebSocket event sent for agent message: ${agent.name}`)
+        console.log(`[Messages] Message ID: ${serializedMessage.id}, Content preview: ${serializedMessage.content?.substring(0, 50)}...`)
+        console.log(`[Messages] Room ID: ${roomId}, Socket message:`, socketMessage)
       }
     } catch (socketError) {
       console.error("[Messages] Failed to send WebSocket event for agent message:", socketError)
       // Don't fail the operation if WebSocket fails
     }
 
+    debugLog('FINAL', `Agent message stored to DB (ID: ${serializedMessage.id})`)
+    debugLog('END', 'Agent message creation flow complete')
+
     return { success: true, data: serializedMessage }
   } catch (error) {
     console.error("Error creating agent message:", error)
+    debugLog('AGENT_ERROR', `Failed to create agent message: ${error}`)
     return { success: false, error: "Failed to create agent message" }
   }
 }
@@ -434,11 +507,27 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
       // Remove emojis and extra spaces from mention for matching
       const cleanMentionName = mentionName.replace(/[\p{Emoji_Presentation}\p{Emoji}\u200D]+/gu, '').trim()
       
-      // Find matching agent in room (try both original mention and cleaned version)
-      const agent = roomAgents.find(roomAgent =>
-        roomAgent.agent.name.toLowerCase() === cleanMentionName ||
-        roomAgent.agent.name.toLowerCase() === mentionName
-      )
+      // Find matching agent in room (try exact match, partial match, and cleaned version)
+      const agent = roomAgents.find(roomAgent => {
+        const agentName = roomAgent.agent.name.toLowerCase()
+
+        // Exact match
+        if (agentName === cleanMentionName || agentName === mentionName) {
+          return true
+        }
+
+        // Partial match - agent name contains the mention
+        if (agentName.includes(mentionName) || mentionName.includes(agentName)) {
+          return true
+        }
+
+        // Cleaned partial match
+        if (agentName.includes(cleanMentionName) || cleanMentionName.includes(agentName)) {
+          return true
+        }
+
+        return false
+      })
 
       if (agent) {
                 mentions.push(agent.agent.id)
@@ -457,19 +546,23 @@ function extractAgentMentions(content: string, roomAgents: Array<{ agent: { id: 
 function triggerIndividualAgentResponses(
   agentMentions: string[],
   validatedData: CreateMessageInput,
-  message: any
+  message: any,
+  userId: string
 ) {
-  
+  console.log('[Messages] triggerIndividualAgentResponses called with agentMentions:', agentMentions)
+
   // Generate responses for each mentioned agent
   agentMentions.forEach(async (agentId) => {
     try {
+      console.log(`[Messages] Generating response for agent ${agentId}...`)
       await generateAgentResponse(
         agentId,
         validatedData.roomId,
         validatedData.content,
-        validatedData.senderId,
+        userId,
         message.sender?.name || "User"
       )
+      console.log(`[Messages] Successfully generated response for agent ${agentId}`)
           } catch (error) {
       console.error(`[Messages] Failed to generate response for agent ${agentId}:`, error)
     }
@@ -504,8 +597,7 @@ function determineDiscussionIntensity(
     .map(ra => ra.agent.style)
 
   const hasBrutalAgents = mentionedAgents.some(style =>
-    ['BRUTAL_MENTOR', 'STRATEGIC_CHALLENGER', 'GROWTH_ACCELERATOR',
-     'EXECUTION_DRILL_SERGEANT', 'TRUTH_TELLER'].includes(style)
+    ['TRUTH_TELLER'].includes(style)
   )
 
   // Determine intensity

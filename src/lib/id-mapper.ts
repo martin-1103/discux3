@@ -190,7 +190,7 @@ export class IdMapper {
       data: { cuidId, qdrantUuid }
     }).catch(error => {
       // Ignore unique constraint violations (race condition)
-      if (!error.message?.includes('Unique constraint')) {
+      if (!(error instanceof Error && error.message.includes('Unique constraint'))) {
         console.error('Error storing ID mapping:', error)
       }
     })

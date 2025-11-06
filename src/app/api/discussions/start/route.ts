@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createDiscussion, executeDiscussion } from "@/lib/services/discussion-orchestrator"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -45,25 +44,31 @@ export async function POST(request: NextRequest) {
 
     // Execute discussion
     const executionResult = await executeDiscussion(
-      discussionResult.data.id,
+      discussionResult.data!.id,
       session.user.id,
       session.user.name
     )
 
-    if (!executionResult.success) {
+    // Type guard for success/error discrimination
+    if ('error' in executionResult) {
       return NextResponse.json(
         { error: executionResult.error },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        discussion: discussionResult.data,
-        execution: executionResult.data
-      }
-    })
+    // Type guard for success case
+    if ('data' in executionResult && executionResult.success) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          discussion: discussionResult.data,
+          execution: executionResult.data!
+        }
+      })
+    }
+
+    return NextResponse.json({ error: "Unexpected execution result" }, { status: 500 })
   } catch (error) {
     console.error("Error starting discussion:", error)
     return NextResponse.json(

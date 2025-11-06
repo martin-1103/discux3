@@ -1,7 +1,7 @@
 import { Server as NetServer } from "http"
-import { NextApiRequest, NextApiResponse } from "next"
+import { NextApiResponse } from "next"
 import { Server as ServerIO } from "socket.io"
-import { auth } from "@/lib/auth"
+import { ServiceRegistry } from "./service-registry"
 
 export interface NextApiResponseWithSocket extends NextApiResponse {
   socket: any
@@ -445,6 +445,12 @@ export class SocketService {
    * Broadcast message to specific room
    */
   public broadcastMessage(roomId: string, message: SocketMessage): void {
+    console.log(`[SocketService] Broadcasting message to room ${roomId}:`, {
+      messageId: message.id,
+      type: message.type,
+      senderName: message.data?.sender?.name,
+      contentPreview: message.data?.content?.substring(0, 50)
+    })
     this.io.to(roomId).emit('new_message', message)
   }
 
@@ -501,22 +507,43 @@ export class SocketService {
   }
 }
 
-// Global socket service instance
-let socketService: SocketService | null = null
+// Use global object to store socket service instance across module boundaries
+declare global {
+  var __socketService: SocketService | null | undefined
+}
+
+// Initialize global socket service if not already set
+if (typeof globalThis !== 'undefined') {
+  globalThis.__socketService = globalThis.__socketService || null
+}
 
 /**
  * Initialize Socket.io service
  */
 export function initializeSocket(httpServer: NetServer): SocketService {
-  if (!socketService) {
-    socketService = new SocketService(httpServer)
+  console.log('[SocketService] initializeSocket() called, globalThis.__socketService:', globalThis.__socketService ? 'exists' : 'null')
+  if (!globalThis.__socketService) {
+    console.log('[SocketService] Creating new SocketService instance')
+    globalThis.__socketService = new SocketService(httpServer)
+    console.log('[SocketService] SocketService instance created')
+
+    // Register to ServiceRegistry for cross-module sharing
+    ServiceRegistry.setSocketService(globalThis.__socketService)
+    console.log('[SocketService] SocketService registered to ServiceRegistry')
   }
-  return socketService
+  console.log('[SocketService] Returning socketService:', globalThis.__socketService ? 'instance' : 'null')
+  return globalThis.__socketService
 }
 
 /**
  * Get socket service instance
  */
 export function getSocketService(): SocketService | null {
-  return socketService
+  console.log('[SocketService] getSocketService() called, globalThis.__socketService:', globalThis.__socketService ? 'exists' : 'null')
+
+  // Try ServiceRegistry first, fallback to globalThis
+  const service = ServiceRegistry.getSocketService() || globalThis.__socketService
+  console.log('[SocketService] getSocketService() returning:', service ? 'instance' : 'null')
+
+  return service || null
 }

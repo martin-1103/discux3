@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Test response generation
     const result = await zaiClient.generateAgentResponse(
       agentPrompt || "You are a helpful AI assistant.",
-      agentStyle || "PROFESSIONAL",
+      agentStyle || "TRUTH_TELLER",
       message,
       [], // No conversation history for simple test
       "test-user-id"
