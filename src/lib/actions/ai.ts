@@ -20,11 +20,14 @@ Communication Style:
 `
 
 /**
- * Clean message content by removing agent metadata
+ * Clean message content by removing agent metadata and mentions
  */
 function cleanMessageContent(content: string): string {
   // Remove [AGENT:...] prefixes if present
-  return content.replace(/^\[AGENT:[^\]]*\]\n/, '').trim()
+  let cleaned = content.replace(/^\[AGENT:[^\]]*\]\n/, '').trim()
+  // Remove @mentions for AI processing
+  cleaned = cleaned.replace(/@([^\s]+)/g, '').trim()
+  return cleaned
 }
 
 /**
