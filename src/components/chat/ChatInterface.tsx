@@ -328,7 +328,8 @@ export function ChatInterface({ roomId, room, currentUserId, currentUserName }: 
       })
 
       if (result.success && result.data) {
-        setMessages(prev => [...prev, result.data])
+        // Don't add message to state here - let WebSocket handle it
+        // This prevents duplicate messages since WebSocket will also receive this message
 
         // Check for agent mentions and generate responses
         await handleAgentMentions(result.data)
