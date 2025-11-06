@@ -5,7 +5,8 @@
       "WebSearch",
       "Bash(find:*)",
       "Bash(npx prisma db execute:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

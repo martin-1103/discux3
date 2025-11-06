@@ -5,7 +5,7 @@ import { initializeSocket } from './src/lib/services/socket-service'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
-const port = process.env.PORT || 3000
+const port = Number(process.env.PORT) || 3000
 
 async function startServer() {
   try {
@@ -74,7 +74,7 @@ async function startServer() {
   } catch (error) {
     console.error('[Server] Failed to start server:', error)
 
-    if (error.message.includes('timeout')) {
+    if (error instanceof Error && error.message.includes('timeout')) {
       console.error('[Server] Next.js preparation timed out. Try:')
       console.error('[Server] - Clean .next folder: rm -rf .next')
       console.error('[Server] - Clear node_modules: npm ci')

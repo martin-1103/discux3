@@ -113,9 +113,10 @@ export async function generateAgentResponse(
     debugLog('AI', `Final prompt with enhancement length: ${basePrompt.length} chars`)
 
     let enhancedPrompt = basePrompt
+    let contextLines = ''
 
     if (relevantContext.length > 0) {
-      const contextLines = relevantContext.map((ctx: any) =>
+      contextLines = relevantContext.map((ctx: any) =>
         `[${new Date(ctx.timestamp).toLocaleTimeString()}] ${ctx.author_name}: ${cleanMessageContent(ctx.content)}`
       ).join('\n')
 
